@@ -1,0 +1,33 @@
+#!/bin/sh -e
+
+is_diverted() {
+  if [ "$(dpkg-divert --list "$1")" ]; then
+    return 0
+  fi
+
+  # not installed
+  return 1
+}
+
+add_diversion() {
+  local file="$1"
+
+  if is_diverted $file; then return; fi
+  local new_file=$(echo $file | sed -re 's#([^/]+)$#glibc_\1#')
+  dpkg-divert --package $DPKG_MAINTSCRIPT_PACKAGE --add --rename \
+    --divert $new_file $file
+}
+
+divert_files() {
+  local files="@DIVERT_FILES@"
+  for file in $files; do add_diversion $file; done
+}
+
+case "$1" in
+    install)
+      divert_files
+    ;;
+esac
+
+#DEBHELPER#
+

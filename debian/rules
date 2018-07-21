@@ -1,0 +1,189 @@
+#!/usr/bin/make -f
+SHELL+= -e
+
+#BUILD_DEB1 := 1
+BUILD_DEB2 := 1
+#BUILD_UDEB := 1
+
+-include debian/rules.local.mk
+
+ifeq ($(filter noudeb, $(DEB_BUILD_PROFILES)), noudeb)
+BUILD_UDEB :=
+endif
+
+D   := $(CURDIR)/debian/libcrypt1
+DD  := $(CURDIR)/debian/libcrypt1-dev
+D2  := $(CURDIR)/debian/libcrypt2
+DD2 := $(CURDIR)/debian/libcrypt2-dev
+DU  := $(CURDIR)/debian/libcrypt1-udeb
+
+CONFFLAGS = --disable-werror --enable-obsolete-api=glibc --prefix=/usr
+CONFFLAGS_deb  = $(CONFFLAGS) \
+  $(shell DEB_BUILD_MAINT_OPTIONS="hardening=+bindnow" \
+    dpkg-buildflags --export=configure || true) \
+  --libdir=/lib/$(DEB_HOST_MULTIARCH) 
+CONFFLAGS_udeb = $(CONFFLAGS) \
+  $(subst -O2,-Os -fomit-frame-pointer,$(shell DEB_BUILD_MAINT_OPTIONS="hardening=-all" \
+    dpkg-buildflags --export=configure || true)) \
+  --libdir=/lib
+
+##############################################################################
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+  CONFFLAGS += --build $(DEB_HOST_GNU_TYPE)
+else
+  CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
+endif
+
+##############################################################################
+BUILD_TARGETS :=
+NO_PACKAGES :=
+
+ifdef BUILD_DEB1
+  BUILD_TARGETS += .stamp-build-deb1
+else
+  NO_PACKAGES += --no-package=libcrypt1 --no-package=libcrypt1-dev
+endif
+
+ifdef BUILD_DEB2
+  BUILD_TARGETS += .stamp-build-deb2
+else
+  NO_PACKAGES += --no-package=libcrypt2 --no-package=libcrypt2-dev
+endif
+
+ifdef BUILD_UDEB
+  BUILD_TARGETS += .stamp-build-udeb
+else
+  NO_PACKAGES += --no-package=libcrypt1-udeb
+endif
+
+DH_OPTIONS += $(NO_PACKAGES)
+export DH_OPTIONS
+
+##############################################################################
+clean:
+	rm -rf .stamp-* build-* debian/copyright \
+		debian/libcrypt1.preinst debian/libcrypt1.postrm \
+		debian/libcrypt1-dev.preinst debian/libcrypt1-dev.postrm \
+		debian/libcrypt2-dev.preinst debian/libcrypt2-dev.postrm
+	dh_autoreconf_clean
+	dh_clean
+
+configure: configure.ac
+	dh_autoreconf
+
+build-deb1/config.status: configure
+	[ -d build-deb1 ] || mkdir build-deb1
+	cd build-deb1/ && \
+	../configure $(CONFFLAGS_deb)
+
+build-deb2/config.status: configure
+	[ -d build-deb2 ] || mkdir build-deb2
+	cd build-deb2/ && \
+	../configure $(subst api=glibc,api=no,$(CONFFLAGS_deb))
+
+build-udeb/config.status: configure
+	[ -d build-udeb ] || mkdir build-udeb
+	cd build-udeb/ && \
+	../configure $(CONFFLAGS_udeb)
+
+build: $(BUILD_TARGETS)
+
+build-deb1: .stamp-build-deb1
+.stamp-build-deb1: build-deb1/config.status
+	dh_testdir
+	cd build-deb1/ && \
+	$(MAKE) all
+	touch $@
+
+build-deb2: .stamp-build-deb2
+.stamp-build-deb2: build-deb2/config.status
+	dh_testdir
+	cd build-deb2/ && \
+	$(MAKE) all
+	touch $@
+
+build-udeb: .stamp-build-udeb
+.stamp-build-udeb: build-udeb/config.status
+	dh_testdir
+	cd build-udeb/ && \
+	$(MAKE) all
+	touch $@
+
+binary-arch: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+
+	dh_installdirs
+
+ifdef BUILD_DEB1
+	cd build-deb1/ && \
+	$(MAKE) install DESTDIR=$D pkgconfigdir='/usr$${libdir}/pkgconfig'
+
+	dh_movefiles -plibcrypt1-dev --sourcedir=debian/libcrypt1/
+	rm $D/lib/*/*.la $D/lib/*/*.so
+	ln -s ../../../lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.1.1.0 $(DD)/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so
+	mv $(DD)/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a $(DD)/usr/lib/$(DEB_HOST_MULTIARCH)/
+	rmdir --parents --ignore-fail-on-non-empty \
+		$$(find $D -type d -empty) $$(find $(DD) -type d -empty)
+
+	dh_installdocs -plibcrypt1-dev --link-doc=libcrypt1
+	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt.3.gz
+	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt_r.3.gz
+
+	sh debian/maintscriptsgen libcrypt1 '/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.1'
+	sh debian/maintscriptsgen libcrypt1-dev '/usr/include/crypt.h /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so /usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
+endif
+
+ifdef BUILD_DEB2
+	cd build-deb2/ && \
+	$(MAKE) install DESTDIR=$(D2) pkgconfigdir='/usr$${libdir}/pkgconfig'
+
+	dh_movefiles -plibcrypt2-dev --sourcedir=debian/libcrypt2/
+	rm $(D2)/lib/*/*.la $(D2)/lib/*/*.so
+	ln -s ../../../lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.2.0.0 $(DD2)/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so
+	mv $(DD2)/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a $(DD2)/usr/lib/$(DEB_HOST_MULTIARCH)/
+	rmdir --parents --ignore-fail-on-non-empty \
+		$$(find $(D2) -type d -empty) $$(find $(DD2) -type d -empty)
+
+	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
+	ln -s crypt_rn.3.gz $(DD2)/usr/share/man/man3/crypt.3.gz
+	ln -s crypt_rn.3.gz $(DD2)/usr/share/man/man3/crypt_r.3.gz
+
+	sh debian/maintscriptsgen libcrypt2-dev '/usr/include/crypt.h /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so /usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
+endif
+
+ifdef BUILD_UDEB
+	cd build-udeb/ && \
+	$(MAKE) install-exec DESTDIR=$(DU)
+	rm $(DU)/lib/*.a $(DU)/lib/*.la $(DU)/lib/*.so
+endif
+
+	cat debian/copyright.in LICENSING > debian/copyright
+	dh_installdocs NEWS README.md TODO
+	dh_installchangelogs
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_makeshlibs -plibcrypt1 --add-udeb=libcrypt1-udeb -- -c4
+	dh_makeshlibs -plibcrypt2 -- -c4
+	dh_shlibdeps -- --warnings=7
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary-indep:
+
+binary:	binary-arch binary-indep
+
+get-orig-source:
+	cd $(dir $(firstword $(MAKEFILE_LIST)))../ && \
+	uscan --rename --force-download --watchfile debian/watch --destdir $(CURDIR)
+
+.PHONY: clean build build-arch build-indep binary binary-arch binary-indep

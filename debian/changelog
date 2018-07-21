@@ -1,0 +1,6 @@
+libxcrypt (1:4.1.0-1) unstable; urgency=medium
+
+  * New upstream release. (Closes: #904019)
+    - This package takes over the old orphaned libxcrypt package.
+
+ -- Marco d'Itri <md@linux.it>  Thu, 19 Jul 2018 11:50:29 +0200

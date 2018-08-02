@@ -1,3 +1,10 @@
+libxcrypt (1:4.1.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Added a missing build-dependency on pkg-config.
+
+ -- Marco d'Itri <md@linux.it>  Thu, 02 Aug 2018 03:07:49 +0200
+
 libxcrypt (1:4.1.0-1) unstable; urgency=medium
 
   * New upstream release. (Closes: #904019)

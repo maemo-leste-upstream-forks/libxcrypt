@@ -43,9 +43,11 @@
 #define __THROW /* nothing */
 #endif
 
-#ifndef HAVE_SYS_CDEFS_NONNULL
+/* While actually compiling the library, suppress the __nonnull tags
+   on the functions in crypt-base.h, so that internal checks for NULL
+   are not deleted by the compiler.  */
+#undef __nonnull
 #define __nonnull(param) /* nothing */
-#endif
 
 /* Suppression of unused-argument warnings.  */
 #if defined __GNUC__ && __GNUC__ >= 3
@@ -129,8 +131,8 @@ void _xcrypt_secure_memset (void *s, size_t len)
 
 /* Set the symbol version for EXTNAME, which uses INTNAME as its
    implementation.  */
-#define symver_set(extname, intname, version, mode) \
-  __asm__ (".symver " #intname "," #extname mode #version)
+#define symver_set(extstr, intname, version, mode) \
+  __asm__ (".symver " #intname "," extstr mode #version)
 
 /* A construct with the same syntactic role as the expansion of symver_set,
    but which does nothing.  */
@@ -165,22 +167,22 @@ void _xcrypt_secure_memset (void *s, size_t len)
 
 #ifdef PIC
 
-#define symver_compat(n, extname, intname, version) \
+#define symver_compat(n, extstr, extname, intname, version) \
   strong_alias (intname, extname ## __ ## n); \
-  symver_set (extname, extname ## __ ## n, version, "@")
+  symver_set (extstr, extname ## __ ## n, version, "@")
 
-#define symver_compat0(extname, intname, version) \
-  symver_set (extname, intname, version, "@")
+#define symver_compat0(extstr, intname, version) \
+  symver_set (extstr, intname, version, "@")
 
-#define symver_default(extname, intname, version) \
-  symver_set (extname, intname, version, "@@")
+#define symver_default(extstr, intname, version) \
+  symver_set (extstr, intname, version, "@@")
 
 #else
 
 /* When not building the shared library, don't do any of this.  */
-#define symver_compat(n, extname, intname, version) symver_nop ()
-#define symver_compat0(extname, intname, version) symver_nop ()
-#define symver_default(extname, intname, version) symver_nop ()
+#define symver_compat(n, extstr, extname, intname, version) symver_nop ()
+#define symver_compat0(extstr, intname, version) symver_nop ()
+#define symver_default(extstr, intname, version) symver_nop ()
 
 #endif
 #endif
@@ -188,8 +190,8 @@ void _xcrypt_secure_memset (void *s, size_t len)
 /* Tests may need to _refer_ to compatibility symbols, but should never need
    to _define_ them.  */
 
-#define symver_ref(extname, intname, version) \
-  symver_set(extname, intname, version, "@")
+#define symver_ref(extstr, intname, version) \
+  symver_set(extstr, intname, version, "@")
 
 /* Get the set of hash algorithms to be included and some related
    definitions.  */
@@ -250,7 +252,7 @@ void _xcrypt_secure_memset (void *s, size_t len)
 #define sha512_process_bytes     _crypt_sha512_process_bytes
 #endif
 
-#if INCLUDE_sha256 || INCLUDE_sha512
+#if INCLUDE_md5 || INCLUDE_sha256 || INCLUDE_sha512
 #define gensalt_sha_rn           _crypt_gensalt_sha_rn
 #endif
 

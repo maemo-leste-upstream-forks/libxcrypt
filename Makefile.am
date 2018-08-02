@@ -37,9 +37,11 @@ libcrypt_la_SOURCES = \
 
 pkgconfig_DATA = libxcrypt.pc
 # Install libcrypt.pc symlink to libxcrypt.pc file.
-.PHONY: install-data-hook-pkgconfig uninstall-hook-pkgconfig
+phony_targets = \
+	install-data-hook-pkgconfig uninstall-hook-pkgconfig
 install-data-hook: install-data-hook-pkgconfig
-uninstall-hook: uninstall-hook-pkgconfig
+uninstall_hook_targets = \
+	uninstall-hook-pkgconfig
 install-data-hook-pkgconfig:
 	cd $(DESTDIR)$(pkgconfigdir) && \
 		$(LN_S) libxcrypt.pc libcrypt.pc
@@ -110,9 +112,11 @@ if ENABLE_COMPAT_SUSE
 # shipped libowcrypt.so.1.)
 if ENABLE_OBSOLETE_API
 if ENABLE_STATIC
-.PHONY: install-exec-hook-libstatic uninstall-hook-libstatic
+phony_targets += \
+	install-exec-hook-libstatic uninstall-hook-libstatic
 install-exec-hook: install-exec-hook-libstatic
-uninstall-hook: uninstall-hook-libstatic
+uninstall_hook_targets += \
+	uninstall-hook-libstatic
 install-exec-hook-libstatic:
 	cd $(DESTDIR)$(libdir) && \
 		$(LN_S) libcrypt.a libowcrypt.a
@@ -120,9 +124,11 @@ uninstall-hook-libstatic:
 	-rm -f $(DESTDIR)$(libdir)/libowcrypt.a
 endif
 if ENABLE_SHARED
-.PHONY: install-exec-hook-libshared uninstall-hook-libshared
+phony_targets += \
+	install-exec-hook-libshared uninstall-hook-libshared
 install-exec-hook: install-exec-hook-libshared
-uninstall-hook: uninstall-hook-libshared
+uninstall_hook_targets += \
+	uninstall-hook-libshared
 install-exec-hook-libshared:
 	cd $(DESTDIR)$(libdir) && \
 		$(LN_S) libcrypt.so libowcrypt.so && \
@@ -142,7 +148,7 @@ check_PROGRAMS = \
 	test-crypt-pbkdf1-sha1 test-crypt-sha256 test-crypt-sha512 \
 	test-crypt-sunmd5 \
 	test-byteorder test-badsalt test-badsetting test-gensalt \
-	test-short-outbuf \
+	test-crypt-badargs test-short-outbuf \
         test-getrandom-interface test-getrandom-fallbacks
 
 if ENABLE_OBSOLETE_API
@@ -187,6 +193,7 @@ test_badsetting_LDADD = libcrypt.la
 test_gensalt_LDADD = libcrypt.la
 test_des_obsolete_LDADD = libcrypt.la
 test_des_obsolete_r_LDADD = libcrypt.la
+test_crypt_badargs_LDADD = libcrypt.la
 test_short_outbuf_LDADD = libcrypt.la
 
 # These tests call internal APIs that may not be accessible from the
@@ -215,3 +222,7 @@ endif
 # will reveal the direct dependency) but a few don't.
 $(libcrypt_la_OBJECTS): crypt-symbol-vers.h crypt-hashes.h
 $(test_byteorder_OBJECTS): crypt-symbol-vers.h crypt-hashes.h
+
+# Add additional targets
+.PHONY: $(phony_targets)
+uninstall-hook: $(uninstall_hook_targets)

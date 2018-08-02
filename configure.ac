@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 m4_include([m4/zw_automodern.m4])
 AC_INIT([xcrypt],
-        [4.1.0],
+        [4.1.1],
         [https://github.com/besser82/libxcrypt/issues],
         [libxcrypt],
         [https://github.com/besser82/libxcrypt])
@@ -72,7 +72,7 @@ AM_CONDITIONAL([HAVE_CPP_dD], [test $ac_cv_prog_cc_dD = yes])
 
 # Checks for header files.
 AC_CHECK_HEADERS_ONCE(
-  [fcntl.h stdbool.h sys/cdefs.h sys/random.h sys/syscall.h ucontext.h])
+  [fcntl.h stdbool.h sys/cdefs.h sys/random.h sys/syscall.h])
 
 # stdint.h and inttypes.h were checked for by AC_INCLUDES_DEFAULT,
 # invoked implicitly by the above.
@@ -151,39 +151,6 @@ AC_CHECK_FUNCS_ONCE([
   syscall
 ])
 
-# The ucontext.h functions that we use were withdrawn from
-# POSIX.1-2008, so the existence of the header does not prove
-# we can use the functions.
-AS_IF([test $ac_cv_header_ucontext_h = yes],
-  [AC_CACHE_CHECK([whether all ucontext.h functions are available],
-     [ac_cv_header_ucontext_h_fns_available],
-     [AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-// This code isn't intended to make sense; it just validates the
-// type signature of all four context functions, and avoids tripping
-// any of the many warnings we may have active.
-#include <ucontext.h>
-static int x;
-static void fn1(void) {}
-static void fn2(int a, int b) { x = a - b; }
-]], [[
-  ucontext_t uc1, uc2;
-  if (getcontext(&uc1)) return 1;
-  if (setcontext(&uc1)) return 1;
-  makecontext(&uc1, fn1, 0);
-  makecontext(&uc2, fn2, 2, 1, 1);
-  if (swapcontext(&uc1, &uc2)) return 1;
-  return x;
-]])],
-        [ac_cv_header_ucontext_h_fns_available=yes],
-        [ac_cv_header_ucontext_h_fns_available=no])])],
-  [ac_cv_header_ucontext_h_fns_available=no])
-
-if test $ac_cv_header_ucontext_h_fns_available = yes; then
-  AC_DEFINE([USE_SWAPCONTEXT], 1,
-    [Define to 1 if getcontext, setcontext, makecontext, and swapcontext are
-     available from ucontext.h without deprecation warnings.])
-fi
-
 # Configure options.
 
 AC_ARG_ENABLE([obsolete-api],
@@ -194,11 +161,11 @@ AC_ARG_ENABLE([obsolete-api],
          When set to "glibc", include interfaces for compatibility with glibc.
          When set to "owl", include interfaces for compatibility with Owl.
          When set to "suse", include interfaces for compatibility with SUSE.
-         When set to "no", do not include compatibility definitions of obsolete
-         APIs (fcrypt, encrypt, setkey) in the shared library, which breaks
-         binary compatibility with glibc's libcrypt.  Only affects existing
-         binaries; new programs cannot be linked against these compatibility
-         functions in any case. [default=yes]]
+         When set to "no", do not include any compatibility definitions at all,
+         and change the soname of the installed library to libcrypt.so.2.
+         This setting only affects existing binaries; new programs cannot
+         be linked against the obsolete APIs (bigcrypt, fcrypt, encrypt, setkey)
+         in any case. [default=yes]]
     ),
     [case "${enableval}" in
         alt|glibc|owl)
@@ -226,11 +193,13 @@ AC_ARG_ENABLE([hashes],
         [--enable-hashes=HASHES],
         [Select hash algorithms to support.  Acceptable values are
          'all' or a comma-separated list of names from the file
-         'hashes.lst' and/or the keywords 'strong' and 'glibc', which
-         select groups of hashes as described in that file.  The
-         default is 'all'.  Note: if binary compatibility with glibc's
-         libcrypt is desired, the 'des' hash must be enabled.]
-    ),
+         'hashes.lst' and/or the keywords 'strong', 'freebsd',
+         'glibc', 'netbsd', 'openbsd', 'osx', and 'solaris',
+         which select groups of hashes as described in that file.
+         The default is 'all'.
+         Note: if binary compatibility with any historic libcrypt is
+         desired (i.e. any --enable-obsolete-api setting other than
+         'no'), the 'des' hash must be enabled.]),
     [hashes_selected=$enableval],
     [hashes_selected=all]
 )
@@ -248,7 +217,15 @@ AC_SUBST([hashes_enabled])
 # implicitly disabled.
 case "$hashes_enabled" in
     *,des,*) ;;
-    *) enable_obsolete_api=0 ;;
+    *)
+       if test x"$COMPAT_ABI" != xno; then
+         AC_MSG_WARN(
+           [--enable-hashes=${hashes_selected} forces --enable-obsolete-api=no])
+       fi
+       enable_obsolete_api=0
+       enable_compat_suse=0
+       COMPAT_ABI=no
+       ;;
 esac
 
 # The obsolete APIs are unconditionally excluded from the static library,

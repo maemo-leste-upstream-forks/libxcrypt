@@ -9,13 +9,17 @@ ACLOCAL_AMFLAGS = -I m4
 
 AM_CFLAGS = $(WARN_CFLAGS)
 
+@VALGRIND_CHECK_RULES@
+TEST_EXTENSIONS = .sh
+
 EXTRA_DIST = \
 	LICENSING THANKS \
 	libcrypt.map.in libcrypt.minver \
 	gen-map.awk gen-vers.awk gen-crypt-h.awk \
 	gen-hashes.awk sel-hashes.awk hashes.lst
 
-notrans_dist_man3_MANS = crypt_rn.3 crypt_gensalt.3
+notrans_dist_man3_MANS = crypt.3 crypt_r.3 crypt_ra.3 \
+	crypt_rn.3 crypt_gensalt.3
 notrans_dist_man5_MANS = crypt.5
 
 nodist_include_HEADERS = crypt.h
@@ -158,15 +162,15 @@ endif
 
 TESTS = $(check_PROGRAMS)
 if ENABLE_STATIC
-TESTS += test-symbols-static
+TESTS += test-symbols-static.sh
 if HAVE_CPP_dD
-TESTS += test-symbols-renames
+TESTS += test-symbols-renames.sh
 endif
 endif
 if ENABLE_OBSOLETE_API
-TESTS += test-symbols-compat
+TESTS += test-symbols-compat.sh
 endif
-EXTRA_DIST += test-symbols-static test-symbols-compat test-symbols-renames
+EXTRA_DIST += test-symbols-static.sh test-symbols-compat.sh test-symbols-renames.sh
 
 AM_TESTS_ENVIRONMENT = \
     lib_la="./libcrypt.la"; lib_map="$(srcdir)/libcrypt.map.in"; \

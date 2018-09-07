@@ -198,7 +198,7 @@ Originally developed by Simon Gerraty for NetBSD.
 Not as weak as the DES-based hashes below,
 but SHA1 is so cheap on modern hardware
 that it should not be used for new hashes.
-.hash "$sha1" "\e$sha1\e$[1-9][0-9]+\e$[./0-9A-Za-z]{1,64}\e$[./0-9A-Za-z]{8,64}[./0-9A-Za-z]{32}" unlimited 8 160 160 "6 to 384" "1 to 4,294,967,295"
+.hash "$sha1" "\e$sha1\e$[1-9][0-9]+\e$[./0-9A-Za-z]{1,64}\e$[./0-9A-Za-z]{8,64}[./0-9A-Za-z]{32}" unlimited 8 160 160 "6 to 384" "4 to 4,294,967,295"
 .PP
 .ti -4
 .B MD5 (Sun)
@@ -279,6 +279,8 @@ that will work on an old operating system that supports nothing else.
 .hash "$3$" "\e$3\e$\e$[0-9a-f]{32}" unlimited 8 256 256 0 1
 .SH SEE ALSO
 .BR crypt (3),
+.BR crypt_r (3),
+.BR crypt_ra (3),
 .BR crypt_rn (3),
 .BR crypt_gensalt (3),
 .BR getpwent (3),

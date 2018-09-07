@@ -1,20 +1,19 @@
-/* One way encryption based on SHA256 sum.
-
-   Copyright (C) 2007-2017 Free Software Foundation, Inc.
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public License
-   as published by the Free Software Foundation; either version 2.1 of
-   the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see
-   <https://www.gnu.org/licenses/>.  */
+/* One way encryption based on the SHA256-based Unix crypt implementation.
+ *
+ * Written by Ulrich Drepper <drepper at redhat.com> in 2007 [1].
+ * Modified by Zack Weinberg <zackw at panix.com> in 2017, 2018.
+ * Composed by Björn Esser <besser82 at fedoraproject.org> in 2018.
+ * To the extent possible under law, the named authors have waived all
+ * copyright and related or neighboring rights to this work.
+ *
+ * See https://creativecommons.org/publicdomain/zero/1.0/ for further
+ * details.
+ *
+ * This file is a modified except from [2], lines 648 up to 909.
+ *
+ * [1]  https://www.akkadia.org/drepper/sha-crypt.html
+ * [2]  https://www.akkadia.org/drepper/SHA-crypt.txt
+ */
 
 #include "crypt-port.h"
 #include "crypt-private.h"

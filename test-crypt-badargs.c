@@ -20,7 +20,8 @@
 
 /* The behavior tested below should be consistent for all hashing
    methods.  */
-static const char *settings[] = {
+static const char *settings[] =
+{
 #if INCLUDE_des || INCLUDE_des_big
   "Mp",
 #endif
@@ -60,6 +61,12 @@ static const char *settings[] = {
   "$2b$05$UBVLHeMpJ/QQCv3XqJx8zO",
   "$2x$05$UBVLHeMpJ/QQCv3XqJx8zO",
   "$2y$05$UBVLHeMpJ/QQCv3XqJx8zO",
+#endif
+#if INCLUDE_yescrypt
+  "$y$j9T$MJHnaAkegEVYHsFKkmfzJ1",
+#endif
+#if INCLUDE_scrypt
+  "$7$CU..../....MJHnaAkegEVYHsFKkmfzJ1",
 #endif
 };
 

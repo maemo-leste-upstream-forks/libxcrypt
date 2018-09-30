@@ -108,8 +108,8 @@ typedef union
   explicit_memset (s, 0x00, len)
 #else
 /* The best hope we have in this case.  */
-static inline
-void _xcrypt_secure_memset (void *s, size_t len)
+static inline void
+_xcrypt_secure_memset (void *s, size_t len)
 {
   volatile unsigned char *c = s;
   while (len--)
@@ -118,6 +118,25 @@ void _xcrypt_secure_memset (void *s, size_t len)
 #define XCRYPT_SECURE_MEMSET(s, len) \
   _xcrypt_secure_memset (s, len)
 #endif
+
+/* Provide a safe way to copy strings with the guarantee src,
+   including its terminating '\0', will fit d_size bytes.
+   The trailing bytes of d_size will be filled with '\0'.
+   dst and src must not be NULL.  Returns strlen (src).  */
+static inline size_t
+_xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
+                         const void *src)
+{
+  assert (dst != NULL);
+  assert (src != NULL);
+  const size_t s_size = strlen ((const char *) src);
+  assert (d_size >= s_size + 1);
+  memcpy (dst, src, s_size);
+  XCRYPT_SECURE_MEMSET ((char *) dst + s_size, d_size - s_size);
+  return s_size;
+}
+#define XCRYPT_STRCPY_OR_ABORT(dst, d_size, src) \
+  _xcrypt_strcpy_or_abort (dst, d_size, src)
 
 /* Per-symbol version tagging.  Currently we only know how to do this
    using GCC extensions.  */
@@ -240,12 +259,6 @@ void _xcrypt_secure_memset (void *s, size_t len)
 #define sha1_process_bytes       _crypt_sha1_process_bytes
 #endif
 
-#if INCLUDE_sha256
-#define sha256_finish_ctx        _crypt_sha256_finish_ctx
-#define sha256_init_ctx          _crypt_sha256_init_ctx
-#define sha256_process_bytes     _crypt_sha256_process_bytes
-#endif
-
 #if INCLUDE_sha512
 #define sha512_finish_ctx        _crypt_sha512_finish_ctx
 #define sha512_init_ctx          _crypt_sha512_init_ctx
@@ -254,6 +267,29 @@ void _xcrypt_secure_memset (void *s, size_t len)
 
 #if INCLUDE_md5 || INCLUDE_sha256 || INCLUDE_sha512
 #define gensalt_sha_rn           _crypt_gensalt_sha_rn
+#endif
+
+#if INCLUDE_yescrypt
+#define PBKDF2_SHA256            _crypt_PBKDF2_SHA256
+#define yescrypt_encode_params_r _crypt_yescrypt_encode_params_r
+#define yescrypt_free_local      _crypt_yescrypt_free_local
+#define yescrypt_init_local      _crypt_yescrypt_init_local
+#define yescrypt_kdf             _crypt_yescrypt_kdf
+#define yescrypt_r               _crypt_yescrypt_r
+#endif
+
+#if INCLUDE_yescrypt || INCLUDE_scrypt
+#define libcperciva_HMAC_SHA256_Init _crypt_HMAC_SHA256_Init
+#define libcperciva_HMAC_SHA256_Update _crypt_HMAC_SHA256_Update
+#define libcperciva_HMAC_SHA256_Final _crypt_HMAC_SHA256_Final
+#define libcperciva_HMAC_SHA256_Buf _crypt_HMAC_SHA256_Buf
+#endif
+
+#if INCLUDE_sha256 || INCLUDE_scrypt || INCLUDE_yescrypt
+#define libcperciva_SHA256_Init  _crypt_SHA256_Init
+#define libcperciva_SHA256_Update _crypt_SHA256_Update
+#define libcperciva_SHA256_Final _crypt_SHA256_Final
+#define libcperciva_SHA256_Buf   _crypt_SHA256_Buf
 #endif
 
 #endif /* crypt-port.h */

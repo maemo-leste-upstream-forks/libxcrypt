@@ -14,30 +14,34 @@ TEST_EXTENSIONS = .sh
 
 EXTRA_DIST = \
 	LICENSING THANKS \
-	libcrypt.map.in libcrypt.minver \
+	crypt-base.h.in libcrypt.map.in libcrypt.minver \
 	gen-map.awk gen-vers.awk gen-crypt-h.awk \
 	gen-hashes.awk sel-hashes.awk hashes.lst
 
-notrans_dist_man3_MANS = crypt.3 crypt_r.3 crypt_ra.3 \
-	crypt_rn.3 crypt_gensalt.3
+notrans_dist_man3_MANS = \
+	crypt.3 crypt_r.3 crypt_ra.3 crypt_rn.3 \
+	crypt_gensalt.3 crypt_gensalt_ra.3 crypt_gensalt_rn.3
 notrans_dist_man5_MANS = crypt.5
 
 nodist_include_HEADERS = crypt.h
-nodist_noinst_HEADERS = crypt-hashes.h
+nodist_noinst_HEADERS = crypt-hashes.h crypt-base.h
 noinst_HEADERS = \
 	alg-des.h alg-hmac-sha1.h alg-md4.h alg-md5.h \
-	alg-sha1.h alg-sha256.h alg-sha512.h byteorder.h \
-	crypt-base.h crypt-obsolete.h crypt-private.h \
-	crypt-port.h test-des-cases.h
+	alg-sha1.h alg-sha256.h alg-sha512.h \
+	alg-yescrypt.h alg-yescrypt-sysendian.h byteorder.h \
+	crypt-obsolete.h crypt-private.h crypt-port.h test-des-cases.h
 
 lib_LTLIBRARIES = libcrypt.la
 libcrypt_la_SOURCES = \
 	alg-des.c alg-des-tables.c alg-hmac-sha1.c alg-md4.c alg-md5.c \
-	alg-sha1.c alg-sha256.c alg-sha512.c \
+	alg-sha1.c alg-sha256.c alg-sha512.c alg-yescrypt-opt.c \
+	alg-yescrypt-common.c \
 	crypt.c crypt-bcrypt.c crypt-des.c crypt-gensalt-static.c \
 	crypt-gensalt.c crypt-md5.c crypt-nthash.c crypt-pbkdf1-sha1.c \
-	crypt-sha256.c crypt-sha512.c crypt-static.c crypt-sunmd5.c \
-	randombytes.c
+	crypt-scrypt.c crypt-sha256.c crypt-sha512.c crypt-static.c \
+	crypt-sunmd5.c crypt-yescrypt.c randombytes.c
+
+EXTRA_DIST += alg-yescrypt-platform.c
 
 pkgconfig_DATA = libxcrypt.pc
 # Install libcrypt.pc symlink to libxcrypt.pc file.
@@ -72,6 +76,8 @@ CLEANFILES = libcrypt.map libcrypt.map.T \
 	crypt-hashes.h crypt-hashes.h.T \
 	crypt.h crypt.h.T
 
+DISTCLEANFILES = .deps/*.Plo
+
 libcrypt.map: libcrypt.map.in gen-map.awk Makefile
 	$(AM_V_GEN)LC_ALL=C $(AWK) \
 	  -v SYMVER_MIN=$(SYMVER_MIN) \
@@ -91,7 +97,7 @@ crypt-symbol-vers.h: libcrypt.map.in gen-vers.awk Makefile
 
 crypt.h: crypt-base.h gen-crypt-h.awk config.h
 	$(AM_V_GEN)LC_ALL=C $(AWK) \
-	  -f $(srcdir)/gen-crypt-h.awk config.h $(srcdir)/crypt-base.h \
+	  -f $(srcdir)/gen-crypt-h.awk config.h $(builddir)/crypt-base.h \
 	  > crypt.h.T
 	$(AM_V_at)mv -f crypt.h.T crypt.h
 
@@ -146,11 +152,12 @@ endif
 
 check_PROGRAMS = \
 	test-alg-des test-alg-hmac-sha1 test-alg-md4 test-alg-md5 \
+	test-alg-pbkdf-hmac-sha256 \
 	test-alg-sha1 test-alg-sha256 test-alg-sha512 \
 	test-crypt-bcrypt test-crypt-des \
 	test-crypt-md5 test-crypt-nthash \
-	test-crypt-pbkdf1-sha1 test-crypt-sha256 test-crypt-sha512 \
-	test-crypt-sunmd5 \
+	test-crypt-pbkdf1-sha1 test-crypt-scrypt test-crypt-sha256 \
+	test-crypt-sha512 test-crypt-sunmd5 test-crypt-yescrypt \
 	test-byteorder test-badsalt test-badsetting test-gensalt \
 	test-crypt-badargs test-short-outbuf \
         test-getrandom-interface test-getrandom-fallbacks
@@ -189,9 +196,11 @@ test_crypt_des_LDADD = libcrypt.la
 test_crypt_md5_LDADD = libcrypt.la
 test_crypt_nthash_LDADD = libcrypt.la
 test_crypt_pbkdf1_sha1_LDADD = libcrypt.la
+test_crypt_scrypt_LDADD = libcrypt.la
 test_crypt_sha256_LDADD = libcrypt.la
 test_crypt_sha512_LDADD = libcrypt.la
 test_crypt_sunmd5_LDADD = libcrypt.la
+test_crypt_yescrypt_LDADD = libcrypt.la
 test_badsalt_LDADD = libcrypt.la
 test_badsetting_LDADD = libcrypt.la
 test_gensalt_LDADD = libcrypt.la
@@ -206,6 +215,7 @@ test_alg_des_LDADD = alg-des.lo alg-des-tables.lo
 test_alg_hmac_sha1_LDADD = alg-sha1.lo alg-hmac-sha1.lo
 test_alg_md4_LDADD = alg-md4.lo
 test_alg_md5_LDADD = alg-md5.lo
+test_alg_pbkdf_hmac_sha256_LDADD = alg-sha256.lo
 test_alg_sha1_LDADD = alg-sha1.lo
 test_alg_sha256_LDADD = alg-sha256.lo
 test_alg_sha512_LDADD = alg-sha512.lo

@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 m4_include([m4/zw_automodern.m4])
 AC_INIT([xcrypt],
-        [4.1.2],
+        [4.2.1],
         [https://github.com/besser82/libxcrypt/issues],
         [libxcrypt],
         [https://github.com/besser82/libxcrypt])
@@ -12,6 +12,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
   Makefile
   libxcrypt.pc
+  crypt-base.h
 ])
 AM_INIT_AUTOMAKE
 
@@ -220,11 +221,12 @@ AC_SUBST(COMPAT_ABI)
 AC_ARG_ENABLE([hashes],
     AS_HELP_STRING(
         [--enable-hashes=HASHES],
-        [Select hash algorithms to support.  Acceptable values are
+        [Select hash methods to support.  Acceptable values are
          'all' or a comma-separated list of names from the file
-         'hashes.lst' and/or the keywords 'strong', 'freebsd',
-         'glibc', 'netbsd', 'openbsd', 'osx', and 'solaris',
-         which select groups of hashes as described in that file.
+         'hashes.lst' and/or the keywords 'strong', 'altlinux',
+         'freebsd', 'glibc', 'netbsd', 'openbsd', 'osx', 'owl',
+         'solaris', and 'suse' which select groups of methods
+         as described in that file.
          The default is 'all'.
          Note: if binary compatibility with any historic libcrypt is
          desired (i.e. any --enable-obsolete-api setting other than
@@ -331,5 +333,14 @@ AM_CONDITIONAL([ENABLE_SHARED], [test $enable_shared = yes])
 
 # The Makefile needs to know if we are cross-compiling.
 AM_CONDITIONAL([CROSS_COMPILING], [test $cross_compiling = yes])
+
+XCRYPT_VERSION_MAJOR=$(
+    echo $PACKAGE_VERSION | $AWK -F. '{ print $1 }'
+)
+AC_SUBST([XCRYPT_VERSION_MAJOR])
+XCRYPT_VERSION_MINOR=$(
+    echo $PACKAGE_VERSION | $AWK -F. '{ print $2 }'
+)
+AC_SUBST([XCRYPT_VERSION_MINOR])
 
 AC_OUTPUT

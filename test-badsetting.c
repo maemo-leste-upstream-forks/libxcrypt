@@ -31,7 +31,8 @@ struct testcase
    and invalid combinations of other arguments to gensalt.
    For each excluded hash, test that a correct gensalt invocation
    will still be rejected.  */
-static const struct testcase testcases[] = {
+static const struct testcase testcases[] =
+{
   /* DES (traditional and/or bigcrypt) -- count is ignored */
 #if INCLUDE_des || INCLUDE_des_big
   { "!a", 0, 0, 0 },            // invalid first character
@@ -126,6 +127,23 @@ static const struct testcase testcases[] = {
   { "$2b$", 0, 0, 0 },
   { "$2x$", 0, 0, 0 },
   { "$2y$", 0, 0, 0 },
+#endif
+#if INCLUDE_yescrypt
+  { "$y",   0,  0, 0 },         // truncated prefix
+  { "$y$",  32, 0, 0 },         // too large
+  { "$y$",  0,  2, 0 },         // inadequate rbytes
+  { "$y$",  0,  0, 4 },         // inadequate osize
+#else
+  { "$y$",  0, 0, 0 },
+#endif
+#if INCLUDE_scrypt
+  { "$7",   0,  0, 0 },         // truncated prefix
+  { "$7$",  3,  0, 0 },         // too small
+  { "$7$",  32, 0, 0 },         // too large
+  { "$7$",  0,  2, 0 },         // inadequate rbytes
+  { "$7$",  0,  0, 4 },         // inadequate osize
+#else
+  { "$7$",  0, 0, 0 },
 #endif
 };
 

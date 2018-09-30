@@ -44,13 +44,13 @@ and then test it against each account's stored hash;
 the hash calculation must be repeated for each account.
 .TP
 2.
+It is not possible to tell whether two accounts use the same passphrase
+without successfully guessing one of the phrases.
+.TP
+3.
 Tables of precalculated hashes of commonly used passphrases
 must have an entry for each possible salt,
 which makes them impractically large.
-.TP
-3.
-It is not possible to tell whether two accounts use the same passphrase
-without successfully guessing one of the phrases.
 .PP
 All of the hashing methods are also deliberately engineered to be slow;
 they use many iterations of an underlying cryptographic primitive
@@ -103,10 +103,10 @@ is up to the hashing method.
 \(oq\fB$\fR\(cq characters
 usually delimit components,
 and the salt and hash are usually encoded as numerals in base 64.
-However, the details of the base-64 encoding vary among hashing
-methods and are usually
+The details of this base-64 encoding vary among hashing methods.
+The common \(lqbase64\(rq encoding specified by RFC 4648 is usually
 .I not
-compatible with the common \(lqbase64\(rq encoding.
+used.
 .SH AVAILABLE HASHING METHODS
 This is a list of
 .I all
@@ -115,7 +115,7 @@ the hashing methods supported by
 in decreasing order of strength.
 Many of the older methods
 are now considered too weak to use for new passphrases.
-The encoded passphrase format is expressed
+The hashed passphrase format is expressed
 with extended regular expressions (see
 .BR regex (7))
 and does not show the division into prefix, options, salt, and hash.
@@ -123,23 +123,24 @@ and does not show the division into prefix, options, salt, and hash.
 .ad l
 .TP
 .B prefix
-.ie "\\$1"" \{\
-"" (empty string)
-.\}
-.el "\\$1"
+"\\$1"
+.if "\\$1"" (empty string)
 .TP
-.B Encoded passphrase format
+.B Hashed passphrase format
 \\$2
 .TP
-.B Maximum password length
+.B Maximum passphrase length
 .ie "\\$3"unlimited" unlimited
 .el \\$3 characters
-.ie "\\$4"7" (ignores 8th bit)
-.TP
+.if "\\$4"7" (ignores 8th bit)
 .TP
 .B Hash size
 \\$6 bits
-.if !"\\$5"\\$6" (effectively \\$5)
+.if !"\\$5"\\$6" \{
+.TP
+.B Effective key size
+\\$5 bits
+.\}
 .TP
 .B Salt size
 \\$7 bits
@@ -150,6 +151,24 @@ and does not show the division into prefix, options, salt, and hash.
 ..
 .PP
 .ti -4
+.B yescrypt
+.br
+yescrypt is a scalable passphrase hashing scheme designed by Solar
+Designer, which is based on Colin Percival's scrypt.
+Recommended for new hashes.
+.hash "$y$" "\e$y\e$[./A-Za-z0-9]+\e$[./A-Za-z0-9]{,86}\e$[./A-Za-z0-9]{43}" unlimited 8 256 256 "up to 512" "1 to 11 (logarithmic)"
+.PP
+.ti -4
+.B scrypt
+.br
+scrypt is a password-based key derivation function created by Colin Percival,
+originally for the Tarsnap online backup service.
+The algorithm was specifically designed to make it costly to perform
+large-scale custom hardware attacks by requiring large amounts of memory.
+In 2016, the scrypt algorithm was published by IETF as RFC 7914.
+.hash "$7$" "\e$7\e$[./A-Za-z0-9]{11,97}\e$[./A-Za-z0-9]{43}" unlimited 8 256 256 "up to 512" "6 to 11 (logarithmic)"
+.PP
+.ti -4
 .B bcrypt
 .br
 A hash based on the Blowfish block cipher,
@@ -157,7 +176,6 @@ modified to have an extra-expensive key schedule.
 Originally developed by Niels Provos and David Mazieres for OpenBSD
 and also supported on recent versions of FreeBSD and NetBSD,
 on Solaris 10 and newer, and on several GNU/*/Linux distributions.
-Recommended for new password hashes.
 .hash "$2b$" "\e$2[abxy]\e$[0-9]{2}\e$[./A-Za-z0-9]{53}" 72 8 184 184 128 "4 to 31 (logarithmic)"
 .PP
 The alternative prefix "$2y$" is equivalent to "$2b$".
@@ -172,7 +190,7 @@ which incorrectly processed characters with the 8th bit set.
 A hash based on SHA-2 with 512-bit output,
 originally developed by Ulrich Drepper for GNU libc.
 Supported on Linux but not common elsewhere.
-Acceptable for new password hashes.
+Acceptable for new hashes.
 The default CPU time cost parameter is 5000,
 which is too low for modern hardware.
 .br
@@ -184,7 +202,7 @@ which is too low for modern hardware.
 A hash based on SHA-2 with 256-bit output,
 originally developed by Ulrich Drepper for GNU libc.
 Supported on Linux but not common elsewhere.
-Acceptable for new password hashes.
+Acceptable for new hashes.
 The default CPU time cost parameter is 5000,
 which is too low for modern hardware.
 .br
@@ -279,9 +297,6 @@ that will work on an old operating system that supports nothing else.
 .hash "$3$" "\e$3\e$\e$[0-9a-f]{32}" unlimited 8 256 256 0 1
 .SH SEE ALSO
 .BR crypt (3),
-.BR crypt_r (3),
-.BR crypt_ra (3),
-.BR crypt_rn (3),
 .BR crypt_gensalt (3),
 .BR getpwent (3),
 .BR passwd (5),

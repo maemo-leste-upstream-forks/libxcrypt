@@ -216,6 +216,52 @@ static const char *const bcrypt_y_expected_output[] =
   "$2y$05$mAyzaIeJu41dWUkxEbn8hO"
 };
 #endif
+#if INCLUDE_yescrypt
+static const char *yescrypt_expected_output[] =
+{
+  "$y$j9T$MJHnaAkegEVYHsFKkmfzJ1",
+  "$y$j9T$PKXc3hCOSyMqdaEQArI62/",
+  "$y$j9T$ZAFlICwYRETzIzIjEIC86.",
+  "$y$j9T$UqGBkVu01rurVZqgNchTB0"
+};
+static const char *yescrypt_expected_output_l[] =
+{
+  "$y$j75$MJHnaAkegEVYHsFKkmfzJ1",
+  "$y$j75$PKXc3hCOSyMqdaEQArI62/",
+  "$y$j75$ZAFlICwYRETzIzIjEIC86.",
+  "$y$j75$UqGBkVu01rurVZqgNchTB0"
+};
+static const char *yescrypt_expected_output_h[] =
+{
+  "$y$jFT$MJHnaAkegEVYHsFKkmfzJ1",
+  "$y$jFT$PKXc3hCOSyMqdaEQArI62/",
+  "$y$jFT$ZAFlICwYRETzIzIjEIC86.",
+  "$y$jFT$UqGBkVu01rurVZqgNchTB0"
+};
+#endif
+#if INCLUDE_scrypt
+static const char *scrypt_expected_output[] =
+{
+  "$7$CU..../....MJHnaAkegEVYHsFKkmfzJ1",
+  "$7$CU..../....PKXc3hCOSyMqdaEQArI62/",
+  "$7$CU..../....ZAFlICwYRETzIzIjEIC86.",
+  "$7$CU..../....UqGBkVu01rurVZqgNchTB0"
+};
+static const char *scrypt_expected_output_l[] =
+{
+  "$7$BU..../....MJHnaAkegEVYHsFKkmfzJ1",
+  "$7$BU..../....PKXc3hCOSyMqdaEQArI62/",
+  "$7$BU..../....ZAFlICwYRETzIzIjEIC86.",
+  "$7$BU..../....UqGBkVu01rurVZqgNchTB0"
+};
+static const char *scrypt_expected_output_h[] =
+{
+  "$7$GU..../....MJHnaAkegEVYHsFKkmfzJ1",
+  "$7$GU..../....PKXc3hCOSyMqdaEQArI62/",
+  "$7$GU..../....ZAFlICwYRETzIzIjEIC86.",
+  "$7$GU..../....UqGBkVu01rurVZqgNchTB0"
+};
+#endif
 
 struct testcase
 {
@@ -295,6 +341,16 @@ static const struct testcase testcases[] =
   { "$2x$",  bcrypt_x_expected_output, 29,  0, 0 },
   { "$2y$",  bcrypt_y_expected_output, 29,  0, 0 },
 #endif
+#if INCLUDE_yescrypt
+  { "$y$",   yescrypt_expected_output,   29, 29,  0 },
+  { "$y$",   yescrypt_expected_output_l, 29, 29,  1 },
+  { "$y$",   yescrypt_expected_output_h, 29, 29, 11 },
+#endif
+#if INCLUDE_scrypt
+  { "$7$",   scrypt_expected_output,   36, 36,  0 },
+  { "$7$",   scrypt_expected_output_l, 36, 36,  6 },
+  { "$7$",   scrypt_expected_output_h, 36, 36, 11 },
+#endif
   { 0, 0, 0, 0, 0 }
 };
 
@@ -367,24 +423,23 @@ main (void)
             fprintf (stderr, "   ok: %s/%lu/%u -> %s\n",
                      tcase->prefix, tcase->rounds, ent, salt);
 
-          XCRYPT_SECURE_MEMSET (prev_output, CRYPT_GENSALT_OUTPUT_SIZE);
-          strncpy (prev_output, salt, CRYPT_GENSALT_OUTPUT_SIZE -1 );
+          XCRYPT_STRCPY_OR_ABORT (prev_output, CRYPT_GENSALT_OUTPUT_SIZE, salt);
         }
     }
 
   /* Currently, passing a null pointer as the prefix argument to
-     crypt_gensalt is supposed to produce a bcrypt-mode-2b setting
+     crypt_gensalt is supposed to produce a yescrypt setting
      string.  */
   {
     char *setting1, *setting2;
-    setting1 = crypt_gensalt_ra ("$2b$", 0, entropy[0], 16);
+    setting1 = crypt_gensalt_ra ("$y$", 0, entropy[0], 16);
     setting2 = crypt_gensalt_ra (0, 0, entropy[0], 16);
     if ((setting1 == 0 && setting2 != 0) ||
         (setting1 != 0 && setting2 == 0) ||
         (setting1 != 0 && setting2 != 0 && strcmp (setting1, setting2)))
       {
-        printf ("FAILED: crypt_gensalt defaulting to $2b$\n"
-                "  $2b$ -> %s\n"
+        printf ("FAILED: crypt_gensalt defaulting to $y$\n"
+                "  $y$ -> %s\n"
                 "  null -> %s\n",
                 setting1, setting2);
         status = 1;

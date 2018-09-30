@@ -3,6 +3,20 @@ libxcrypt NEWS -- history of user-visible changes.
 Please send bug reports, questions and suggestions to
 <https://github.com/besser82/libxcrypt/issues>.
 
+Version 4.2.1
+* Fix tests for yescrypt and scrypt, when failure-tokens have been
+  disabled.
+
+Version 4.2.0
+* Implement yescrypt ($y$) and scrypt ($7$) hashing algorithms.
+* For scrypt the implemented gensalt function ensures every new hash
+  is computed using at least 32 MiBytes of RAM.
+* yescrypt is the new default method used for new hashes.
+* --enable-hashes now supports additional groups of hashing methods:
+  'altlinux', 'owl', and 'suse', which select the methods historically
+  supported on those operating systems.
+* Added 'XCRYPT_VERSION_*' macros.
+
 Version 4.1.2
 * Add optional 'check-valgrind' target to the Makefile.
 * Replace crypt-sha{256,512}.c with an implementation in the Public

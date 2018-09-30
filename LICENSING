@@ -14,9 +14,8 @@ source tree.  For specific licensing terms consult the files themselves.
  * Copyright Free Software Foundation, Inc.; LGPL (v2.1 or later):
    crypt-base.h, crypt-obsolete.h, crypt-private.h
    alg-md5.h, alg-md5.c, crypt-md5.c,
-   alg-sha256.h, alg-sha256.c,
    alg-sha512.h, alg-sha512.c,
-   test-crypt-badsalt, test-crypt-nonnull
+   test-crypt-badsalt.c, test-crypt-nonnull.c
 
  * Copyright David Burren et al.; 3-clause BSD:
    alg-des.h, alg-des.c, alg-des-tables.c,
@@ -27,6 +26,16 @@ source tree.  For specific licensing terms consult the files themselves.
 
  * Public domain, written by Solar Designer et al.:
    alg-md4.h, alg-md4.c, crypt-bcrypt.c, crypt-gensalt.c, test-crypt-bcrypt.c
+
+ * Copyright Solar Designer, Colin Percival; 0-clause BSD:
+   alg-yescrypt-common.c, alg-yescrypt-platform.c
+
+ * Copyright Solar Designer, Colin Percival; 2-clause BSD:
+   alg-sha256.c, alg-sha256.h, alg-yescrypt.h, alg-yescrypt-opt.c,
+   alg-yescrypt-sysendian.h
+
+ * Copyright Alexander Peslyak, Björn Esser; 0-clause BSD:
+   crypt-scrypt.c
 
  * Copyright Michael Bretterklieber, Björn Esser et al.; 2-clause BSD:
    crypt-nthash.c
@@ -45,6 +54,7 @@ source tree.  For specific licensing terms consult the files themselves.
 
  * Public domain, written by Zack Weinberg et al.:
    byteorder.h, randombytes.c, test-byteorder.c
+   test-alg-pbkdf-hmac-sha256.c
    gen-crypt-h.awk, gen-map.awk, gen-vers.awk
    test-symbols-compat, test-symbols-renames, test-symbols-static
    m4/zw_alignment.m4, m4/zw_static_assert.m4, m4/skip-if-exec-format-error
@@ -52,6 +62,9 @@ source tree.  For specific licensing terms consult the files themselves.
  * Copyright Zack Weinberg and Free Software Foundation, Inc;
    GPL (v3 or later), with Autoconf exception:
    m4/zw_automodern.m4, m4/zw_simple_warnings.m4
+
+ * Copyright <vt at altlinux.org>; 0-clause BSD:
+   crypt-yescrypt.c, test-crypt-yescrypt.c
 
  * Copyright holders unknown, no statement of license (all of these
    files are part of the testsuite and do not contribute to the

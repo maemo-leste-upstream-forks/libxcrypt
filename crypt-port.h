@@ -43,9 +43,15 @@
 #define __THROW /* nothing */
 #endif
 
+/* Version of __GNUC_PREREQ with trailing underscores for BSD
+   compatibility.  */
+#ifndef __GNUC_PREREQ__
+# define __GNUC_PREREQ__(ma, mi) __GNUC_PREREQ(ma, mi)
+#endif
+
 /* While actually compiling the library, suppress the __nonnull tags
-   on the functions in crypt-base.h, so that internal checks for NULL
-   are not deleted by the compiler.  */
+   on the functions in crypt.h, so that internal checks for NULL are
+   not deleted by the compiler.  */
 #undef __nonnull
 #define __nonnull(param) /* nothing */
 
@@ -54,6 +60,18 @@
 # define ARG_UNUSED(x) x __attribute__ ((__unused__))
 #else
 # define ARG_UNUSED(x) x
+#endif
+
+/* C99 Static array indices in function parameter declarations.  Syntax
+   such as:  void bar(int myArray[static 10]);  is allowed in C99, but
+   not all compiler support it properly.  Define MIN_SIZE appropriately
+   so headers using it can be compiled using any compiler.
+   Use like this:  void bar(int myArray[MIN_SIZE(10)]);  */
+#if (defined(__clang__) || __GNUC_PREREQ__(4, 6)) && \
+    (!defined(__STDC_VERSION__) || (__STDC_VERSION__ >= 199901))
+#define MIN_SIZE(x) static (x)
+#else
+#define MIN_SIZE(x) (x)
 #endif
 
 /* static_assert shim.  */
@@ -241,15 +259,15 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 #endif
 
 #if INCLUDE_nthash
-#define md4_finish_ctx           _crypt_md4_finish_ctx
-#define md4_init_ctx             _crypt_md4_init_ctx
-#define md4_process_bytes        _crypt_md4_process_bytes
+#define MD4_Init   _crypt_MD4_Init
+#define MD4_Update _crypt_MD4_Update
+#define MD4_Final  _crypt_MD4_Final
 #endif
 
 #if INCLUDE_md5 || INCLUDE_sunmd5
-#define md5_finish_ctx           _crypt_md5_finish_ctx
-#define md5_init_ctx             _crypt_md5_init_ctx
-#define md5_process_bytes        _crypt_md5_process_bytes
+#define MD5_Init   _crypt_MD5_Init
+#define MD5_Update _crypt_MD5_Update
+#define MD5_Final  _crypt_MD5_Final
 #endif
 
 #if INCLUDE_sha1
@@ -260,9 +278,10 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 #endif
 
 #if INCLUDE_sha512
-#define sha512_finish_ctx        _crypt_sha512_finish_ctx
-#define sha512_init_ctx          _crypt_sha512_init_ctx
-#define sha512_process_bytes     _crypt_sha512_process_bytes
+#define libcperciva_SHA512_Init   _crypt_SHA512_Init
+#define libcperciva_SHA512_Update _crypt_SHA512_Update
+#define libcperciva_SHA512_Final  _crypt_SHA512_Final
+#define libcperciva_SHA512_Buf    _crypt_SHA512_Buf
 #endif
 
 #if INCLUDE_md5 || INCLUDE_sha256 || INCLUDE_sha512
@@ -291,5 +310,7 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 #define libcperciva_SHA256_Final _crypt_SHA256_Final
 #define libcperciva_SHA256_Buf   _crypt_SHA256_Buf
 #endif
+
+#include "crypt.h"
 
 #endif /* crypt-port.h */

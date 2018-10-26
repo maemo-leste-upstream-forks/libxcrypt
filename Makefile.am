@@ -4,7 +4,8 @@
 # Author: Thorsten Kukuk <kukuk@suse.de>
 #
 
-AUTOMAKE_OPTIONS = 1.14 gnits
+AUTOMAKE_OPTIONS = 1.14 gnits dist-bzip2 dist-xz \
+	filename-length-max=99
 ACLOCAL_AMFLAGS = -I m4
 
 AM_CFLAGS = $(WARN_CFLAGS)
@@ -14,7 +15,7 @@ TEST_EXTENSIONS = .sh
 
 EXTRA_DIST = \
 	LICENSING THANKS \
-	crypt-base.h.in libcrypt.map.in libcrypt.minver \
+	crypt.h.in.in libcrypt.map.in libcrypt.minver \
 	gen-map.awk gen-vers.awk gen-crypt-h.awk \
 	gen-hashes.awk sel-hashes.awk hashes.lst
 
@@ -24,12 +25,14 @@ notrans_dist_man3_MANS = \
 notrans_dist_man5_MANS = crypt.5
 
 nodist_include_HEADERS = crypt.h
-nodist_noinst_HEADERS = crypt-hashes.h crypt-base.h
+nodist_noinst_HEADERS = crypt-hashes.h crypt-symbol-vers.h
 noinst_HEADERS = \
 	alg-des.h alg-hmac-sha1.h alg-md4.h alg-md5.h \
 	alg-sha1.h alg-sha256.h alg-sha512.h \
 	alg-yescrypt.h alg-yescrypt-sysendian.h byteorder.h \
 	crypt-obsolete.h crypt-private.h crypt-port.h test-des-cases.h
+
+noinst_PROGRAMS = gen-des-tables
 
 lib_LTLIBRARIES = libcrypt.la
 libcrypt_la_SOURCES = \
@@ -71,12 +74,18 @@ libcrypt_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_LIBCRYPT
 
 CONFIG_STATUS_DEPENDENCIES = libcrypt.minver
 EXTRA_libcrypt_la_DEPENDENCIES = libcrypt.map
-CLEANFILES = libcrypt.map libcrypt.map.T \
+CLEANFILES = Makefile.deps.T Makefile.deps \
+	libcrypt.map libcrypt.map.T \
 	crypt-symbol-vers.h crypt-symbol-vers.h.T \
 	crypt-hashes.h crypt-hashes.h.T \
 	crypt.h crypt.h.T
 
 DISTCLEANFILES = .deps/*.Plo
+
+# Empty target to have needed headers pre-generated before any other target.
+Makefile.deps: crypt.h
+	$(AM_V_GEN)LC_ALL=C echo "# Deps" > Makefile.deps.T
+	$(AM_V_at)mv -f Makefile.deps.T Makefile.deps
 
 libcrypt.map: libcrypt.map.in gen-map.awk Makefile
 	$(AM_V_GEN)LC_ALL=C $(AWK) \
@@ -95,9 +104,9 @@ crypt-symbol-vers.h: libcrypt.map.in gen-vers.awk Makefile
 	     $(srcdir)/libcrypt.map.in > crypt-symbol-vers.h.T
 	$(AM_V_at)mv -f crypt-symbol-vers.h.T crypt-symbol-vers.h
 
-crypt.h: crypt-base.h gen-crypt-h.awk config.h
+crypt.h: crypt.h.in crypt-hashes.h crypt-symbol-vers.h gen-crypt-h.awk config.h
 	$(AM_V_GEN)LC_ALL=C $(AWK) \
-	  -f $(srcdir)/gen-crypt-h.awk config.h $(builddir)/crypt-base.h \
+	  -f $(srcdir)/gen-crypt-h.awk config.h $(builddir)/crypt.h.in \
 	  > crypt.h.T
 	$(AM_V_at)mv -f crypt.h.T crypt.h
 
@@ -230,12 +239,8 @@ endif
 
 # Every object file depends on crypt-symbol-vers.h and crypt-hashes.h,
 # which are generated files, so automatic dependency generation is not
-# sufficient.  Most of the test programs depend on either libcrypt.la
-# or one of its components, so they do not need an explicit dependency
-# (after the first *successful* build, automatic dependency generation
-# will reveal the direct dependency) but a few don't.
-$(libcrypt_la_OBJECTS): crypt-symbol-vers.h crypt-hashes.h
-$(test_byteorder_OBJECTS): crypt-symbol-vers.h crypt-hashes.h
+# sufficient.
+include $(builddir)/Makefile.deps
 
 # Add additional targets
 .PHONY: $(phony_targets)

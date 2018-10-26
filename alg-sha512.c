@@ -1,289 +1,343 @@
-/* Functions to compute SHA512 message digest of files or memory blocks.
-   according to the definition of SHA512 in FIPS 180-2.
-   Copyright (C) 2007-2017 Free Software Foundation, Inc.
-
-   This library is free software; you can redistribute it and/or
-   modify it under the terms of the GNU Lesser General Public License
-   as published by the Free Software Foundation; either version 2.1 of
-   the License, or (at your option) any later version.
-
-   This library is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU Lesser General Public License for more details.
-
-   You should have received a copy of the GNU Lesser General Public
-   License along with this library; if not, see
-   <https://www.gnu.org/licenses/>.  */
-
-/* Written by Ulrich Drepper <drepper@redhat.com>, 2007.  */
+/*-
+ * Copyright 2005 Colin Percival
+ * Copyright (c) 2015 Allan Jude <allanjude@FreeBSD.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 #include "crypt-port.h"
-#include "alg-sha512.h"
-#include "byteorder.h"
 
 #if INCLUDE_sha512
 
-/* Constants for SHA512 from FIPS 180-2:4.2.3.  */
-static const uint64_t K[80] =
+#include "alg-sha512.h"
+#include "alg-yescrypt-sysendian.h"
+
+#if IS_BIGENDIAN
+/* Copy a vector of big-endian uint64_t into a vector of bytes */
+#define be64enc_vect(dst, src, len)	\
+	memcpy((void *)dst, (const void *)src, (size_t)len)
+
+/* Copy a vector of bytes into a vector of big-endian uint64_t */
+#define be64dec_vect(dst, src, len)	\
+	memcpy((void *)dst, (const void *)src, (size_t)len)
+
+#else /* IS_BIGENDIAN */
+
+/*
+ * Encode a length len/4 vector of (uint64_t) into a length len vector of
+ * (unsigned char) in big-endian form.  Assumes len is a multiple of 8.
+ */
+static void
+be64enc_vect(unsigned char *dst, const uint64_t *src, size_t len)
 {
-  UINT64_C (0x428a2f98d728ae22), UINT64_C (0x7137449123ef65cd),
-  UINT64_C (0xb5c0fbcfec4d3b2f), UINT64_C (0xe9b5dba58189dbbc),
-  UINT64_C (0x3956c25bf348b538), UINT64_C (0x59f111f1b605d019),
-  UINT64_C (0x923f82a4af194f9b), UINT64_C (0xab1c5ed5da6d8118),
-  UINT64_C (0xd807aa98a3030242), UINT64_C (0x12835b0145706fbe),
-  UINT64_C (0x243185be4ee4b28c), UINT64_C (0x550c7dc3d5ffb4e2),
-  UINT64_C (0x72be5d74f27b896f), UINT64_C (0x80deb1fe3b1696b1),
-  UINT64_C (0x9bdc06a725c71235), UINT64_C (0xc19bf174cf692694),
-  UINT64_C (0xe49b69c19ef14ad2), UINT64_C (0xefbe4786384f25e3),
-  UINT64_C (0x0fc19dc68b8cd5b5), UINT64_C (0x240ca1cc77ac9c65),
-  UINT64_C (0x2de92c6f592b0275), UINT64_C (0x4a7484aa6ea6e483),
-  UINT64_C (0x5cb0a9dcbd41fbd4), UINT64_C (0x76f988da831153b5),
-  UINT64_C (0x983e5152ee66dfab), UINT64_C (0xa831c66d2db43210),
-  UINT64_C (0xb00327c898fb213f), UINT64_C (0xbf597fc7beef0ee4),
-  UINT64_C (0xc6e00bf33da88fc2), UINT64_C (0xd5a79147930aa725),
-  UINT64_C (0x06ca6351e003826f), UINT64_C (0x142929670a0e6e70),
-  UINT64_C (0x27b70a8546d22ffc), UINT64_C (0x2e1b21385c26c926),
-  UINT64_C (0x4d2c6dfc5ac42aed), UINT64_C (0x53380d139d95b3df),
-  UINT64_C (0x650a73548baf63de), UINT64_C (0x766a0abb3c77b2a8),
-  UINT64_C (0x81c2c92e47edaee6), UINT64_C (0x92722c851482353b),
-  UINT64_C (0xa2bfe8a14cf10364), UINT64_C (0xa81a664bbc423001),
-  UINT64_C (0xc24b8b70d0f89791), UINT64_C (0xc76c51a30654be30),
-  UINT64_C (0xd192e819d6ef5218), UINT64_C (0xd69906245565a910),
-  UINT64_C (0xf40e35855771202a), UINT64_C (0x106aa07032bbd1b8),
-  UINT64_C (0x19a4c116b8d2d0c8), UINT64_C (0x1e376c085141ab53),
-  UINT64_C (0x2748774cdf8eeb99), UINT64_C (0x34b0bcb5e19b48a8),
-  UINT64_C (0x391c0cb3c5c95a63), UINT64_C (0x4ed8aa4ae3418acb),
-  UINT64_C (0x5b9cca4f7763e373), UINT64_C (0x682e6ff3d6b2b8a3),
-  UINT64_C (0x748f82ee5defb2fc), UINT64_C (0x78a5636f43172f60),
-  UINT64_C (0x84c87814a1f0ab72), UINT64_C (0x8cc702081a6439ec),
-  UINT64_C (0x90befffa23631e28), UINT64_C (0xa4506cebde82bde9),
-  UINT64_C (0xbef9a3f7b2c67915), UINT64_C (0xc67178f2e372532b),
-  UINT64_C (0xca273eceea26619c), UINT64_C (0xd186b8c721c0c207),
-  UINT64_C (0xeada7dd6cde0eb1e), UINT64_C (0xf57d4f7fee6ed178),
-  UINT64_C (0x06f067aa72176fba), UINT64_C (0x0a637dc5a2c898a6),
-  UINT64_C (0x113f9804bef90dae), UINT64_C (0x1b710b35131c471b),
-  UINT64_C (0x28db77f523047d84), UINT64_C (0x32caab7b40c72493),
-  UINT64_C (0x3c9ebe0a15c9bebc), UINT64_C (0x431d67c49c100d4c),
-  UINT64_C (0x4cc5d4becb3e42b6), UINT64_C (0x597f299cfc657e2a),
-  UINT64_C (0x5fcb6fab3ad6faec), UINT64_C (0x6c44198c4a475817)
+	size_t i;
+
+	for (i = 0; i < len / 8; i++)
+		be64enc(dst + i * 8, src[i]);
+}
+
+/*
+ * Decode a big-endian length len vector of (unsigned char) into a length
+ * len/4 vector of (uint64_t).  Assumes len is a multiple of 8.
+ */
+static void
+be64dec_vect(uint64_t *dst, const unsigned char *src, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len / 8; i++)
+		dst[i] = be64dec(src + i * 8);
+}
+
+#endif /* IS_BIGENDIAN */
+
+/* SHA512 round constants. */
+static const uint64_t K[80] = {
+	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
+	0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
+	0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,
+	0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL,
+	0xd807aa98a3030242ULL, 0x12835b0145706fbeULL,
+	0x243185be4ee4b28cULL, 0x550c7dc3d5ffb4e2ULL,
+	0x72be5d74f27b896fULL, 0x80deb1fe3b1696b1ULL,
+	0x9bdc06a725c71235ULL, 0xc19bf174cf692694ULL,
+	0xe49b69c19ef14ad2ULL, 0xefbe4786384f25e3ULL,
+	0x0fc19dc68b8cd5b5ULL, 0x240ca1cc77ac9c65ULL,
+	0x2de92c6f592b0275ULL, 0x4a7484aa6ea6e483ULL,
+	0x5cb0a9dcbd41fbd4ULL, 0x76f988da831153b5ULL,
+	0x983e5152ee66dfabULL, 0xa831c66d2db43210ULL,
+	0xb00327c898fb213fULL, 0xbf597fc7beef0ee4ULL,
+	0xc6e00bf33da88fc2ULL, 0xd5a79147930aa725ULL,
+	0x06ca6351e003826fULL, 0x142929670a0e6e70ULL,
+	0x27b70a8546d22ffcULL, 0x2e1b21385c26c926ULL,
+	0x4d2c6dfc5ac42aedULL, 0x53380d139d95b3dfULL,
+	0x650a73548baf63deULL, 0x766a0abb3c77b2a8ULL,
+	0x81c2c92e47edaee6ULL, 0x92722c851482353bULL,
+	0xa2bfe8a14cf10364ULL, 0xa81a664bbc423001ULL,
+	0xc24b8b70d0f89791ULL, 0xc76c51a30654be30ULL,
+	0xd192e819d6ef5218ULL, 0xd69906245565a910ULL,
+	0xf40e35855771202aULL, 0x106aa07032bbd1b8ULL,
+	0x19a4c116b8d2d0c8ULL, 0x1e376c085141ab53ULL,
+	0x2748774cdf8eeb99ULL, 0x34b0bcb5e19b48a8ULL,
+	0x391c0cb3c5c95a63ULL, 0x4ed8aa4ae3418acbULL,
+	0x5b9cca4f7763e373ULL, 0x682e6ff3d6b2b8a3ULL,
+	0x748f82ee5defb2fcULL, 0x78a5636f43172f60ULL,
+	0x84c87814a1f0ab72ULL, 0x8cc702081a6439ecULL,
+	0x90befffa23631e28ULL, 0xa4506cebde82bde9ULL,
+	0xbef9a3f7b2c67915ULL, 0xc67178f2e372532bULL,
+	0xca273eceea26619cULL, 0xd186b8c721c0c207ULL,
+	0xeada7dd6cde0eb1eULL, 0xf57d4f7fee6ed178ULL,
+	0x06f067aa72176fbaULL, 0x0a637dc5a2c898a6ULL,
+	0x113f9804bef90daeULL, 0x1b710b35131c471bULL,
+	0x28db77f523047d84ULL, 0x32caab7b40c72493ULL,
+	0x3c9ebe0a15c9bebcULL, 0x431d67c49c100d4cULL,
+	0x4cc5d4becb3e42b6ULL, 0x597f299cfc657e2aULL,
+	0x5fcb6fab3ad6faecULL, 0x6c44198c4a475817ULL
 };
 
+/* Elementary functions used by SHA512 */
+#define Ch(x, y, z)	((x & (y ^ z)) ^ z)
+#define Maj(x, y, z)	((x & (y | z)) | (y & z))
+#define SHR(x, n)	(x >> n)
+#define ROTR(x, n)	((x >> n) | (x << (64 - n)))
+#define S0(x)		(ROTR(x, 28) ^ ROTR(x, 34) ^ ROTR(x, 39))
+#define S1(x)		(ROTR(x, 14) ^ ROTR(x, 18) ^ ROTR(x, 41))
+#define s0(x)		(ROTR(x, 1) ^ ROTR(x, 8) ^ SHR(x, 7))
+#define s1(x)		(ROTR(x, 19) ^ ROTR(x, 61) ^ SHR(x, 6))
 
-/* Process LEN bytes of BUFFER, accumulating context into CTX.
-   It is assumed that LEN % 128 == 0.  */
+/* SHA512 round function */
+#define RND(a, b, c, d, e, f, g, h, k)			\
+	h += S1(e) + Ch(e, f, g) + k;			\
+	d += h;						\
+	h += S0(a) + Maj(a, b, c);
+
+/* Adjusted round function for rotating state */
+#define RNDr(S, W, i, ii)			\
+	RND(S[(80 - i) % 8], S[(81 - i) % 8],	\
+	    S[(82 - i) % 8], S[(83 - i) % 8],	\
+	    S[(84 - i) % 8], S[(85 - i) % 8],	\
+	    S[(86 - i) % 8], S[(87 - i) % 8],	\
+	    W[i + ii] + K[i + ii])
+
+/* Message schedule computation */
+#define MSCH(W, ii, i)				\
+	W[i + ii + 16] = s1(W[i + ii + 14]) + W[i + ii + 9] + s0(W[i + ii + 1]) + W[i + ii]
+
+/*
+ * SHA512 block compression function.  The 512-bit state is transformed via
+ * the 512-bit input block to produce a new state.
+ */
 static void
-sha512_process_block (const void *buffer, size_t len, struct sha512_ctx *ctx)
+SHA512_Transform(uint64_t * state, const unsigned char block[SHA512_BLOCK_LENGTH])
 {
-  unsigned int t;
-  const unsigned char *p = buffer;
-  size_t nwords = len / sizeof (uint64_t);
-  uint64_t a = ctx->H[0];
-  uint64_t b = ctx->H[1];
-  uint64_t c = ctx->H[2];
-  uint64_t d = ctx->H[3];
-  uint64_t e = ctx->H[4];
-  uint64_t f = ctx->H[5];
-  uint64_t g = ctx->H[6];
-  uint64_t h = ctx->H[7];
+	uint64_t W[80];
+	uint64_t S[8];
+	int i;
 
-  /* First increment the byte count.  FIPS 180-2 specifies the possible
-     length of the file up to 2^128 bits.  Here we only compute the
-     number of bytes.  Do a double word increment.  */
-  ctx->total[0] += len;
-  if (ctx->total[0] < len)
-    ++ctx->total[1];
+	/* 1. Prepare the first part of the message schedule W. */
+	be64dec_vect(W, block, SHA512_BLOCK_LENGTH);
 
-  /* Process all bytes in the buffer with 128 bytes in each round of
-     the loop.  */
-  while (nwords > 0)
-    {
-      uint64_t W[80];
-      uint64_t a_save = a;
-      uint64_t b_save = b;
-      uint64_t c_save = c;
-      uint64_t d_save = d;
-      uint64_t e_save = e;
-      uint64_t f_save = f;
-      uint64_t g_save = g;
-      uint64_t h_save = h;
+	/* 2. Initialize working variables. */
+	memcpy(S, state, SHA512_DIGEST_LENGTH);
 
-      /* Operators defined in FIPS 180-2:4.1.2.  */
-#define Ch(x, y, z) ((x & y) ^ (~x & z))
-#define Maj(x, y, z) ((x & y) ^ (x & z) ^ (y & z))
-#define S0(x) (CYCLIC (x, 28) ^ CYCLIC (x, 34) ^ CYCLIC (x, 39))
-#define S1(x) (CYCLIC (x, 14) ^ CYCLIC (x, 18) ^ CYCLIC (x, 41))
-#define R0(x) (CYCLIC (x, 1) ^ CYCLIC (x, 8) ^ (x >> 7))
-#define R1(x) (CYCLIC (x, 19) ^ CYCLIC (x, 61) ^ (x >> 6))
+	/* 3. Mix. */
+	for (i = 0; i < 80; i += 16) {
+		RNDr(S, W, 0, i);
+		RNDr(S, W, 1, i);
+		RNDr(S, W, 2, i);
+		RNDr(S, W, 3, i);
+		RNDr(S, W, 4, i);
+		RNDr(S, W, 5, i);
+		RNDr(S, W, 6, i);
+		RNDr(S, W, 7, i);
+		RNDr(S, W, 8, i);
+		RNDr(S, W, 9, i);
+		RNDr(S, W, 10, i);
+		RNDr(S, W, 11, i);
+		RNDr(S, W, 12, i);
+		RNDr(S, W, 13, i);
+		RNDr(S, W, 14, i);
+		RNDr(S, W, 15, i);
 
-      /* It is unfortunate that C does not provide an operator for
-         cyclic rotation.  Hope the C compiler is smart enough.  */
-#define CYCLIC(w, s) ((w >> s) | (w << (64 - s)))
+		if (i == 64)
+			break;
+		MSCH(W, 0, i);
+		MSCH(W, 1, i);
+		MSCH(W, 2, i);
+		MSCH(W, 3, i);
+		MSCH(W, 4, i);
+		MSCH(W, 5, i);
+		MSCH(W, 6, i);
+		MSCH(W, 7, i);
+		MSCH(W, 8, i);
+		MSCH(W, 9, i);
+		MSCH(W, 10, i);
+		MSCH(W, 11, i);
+		MSCH(W, 12, i);
+		MSCH(W, 13, i);
+		MSCH(W, 14, i);
+		MSCH(W, 15, i);
+	}
 
-      /* Compute the message schedule according to FIPS 180-2:6.3.2 step 2.  */
-      for (t = 0; t < 16; ++t)
-        {
-          W[t] = be64_to_cpu (p);
-          p += 8;
-        }
-      for (t = 16; t < 80; ++t)
-        W[t] = R1 (W[t - 2]) + W[t - 7] + R0 (W[t - 15]) + W[t - 16];
-
-      /* The actual computation according to FIPS 180-2:6.3.2 step 3.  */
-      for (t = 0; t < 80; ++t)
-        {
-          uint64_t T1 = h + S1 (e) + Ch (e, f, g) + K[t] + W[t];
-          uint64_t T2 = S0 (a) + Maj (a, b, c);
-          h = g;
-          g = f;
-          f = e;
-          e = d + T1;
-          d = c;
-          c = b;
-          b = a;
-          a = T1 + T2;
-        }
-
-      /* Add the starting values of the context according to FIPS 180-2:6.3.2
-         step 4.  */
-      a += a_save;
-      b += b_save;
-      c += c_save;
-      d += d_save;
-      e += e_save;
-      f += f_save;
-      g += g_save;
-      h += h_save;
-
-      /* Prepare for the next round.  */
-      nwords -= 16;
-    }
-
-  /* Put checksum in context given as argument.  */
-  ctx->H[0] = a;
-  ctx->H[1] = b;
-  ctx->H[2] = c;
-  ctx->H[3] = d;
-  ctx->H[4] = e;
-  ctx->H[5] = f;
-  ctx->H[6] = g;
-  ctx->H[7] = h;
+	/* 4. Mix local working variables into global state */
+	for (i = 0; i < 8; i++)
+		state[i] += S[i];
 }
 
+static unsigned char PAD[SHA512_BLOCK_LENGTH] = {
+	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 
-/* Initialize structure containing state of computation.
-   (FIPS 180-2:5.3.3)  */
+/* Add padding and terminating bit-count. */
+static void
+SHA512_Pad(SHA512_CTX * ctx)
+{
+	size_t r;
+
+	/* Figure out how many bytes we have buffered. */
+	r = (ctx->count[1] >> 3) & 0x7f;
+
+	/* Pad to 112 mod 128, transforming if we finish a block en route. */
+	if (r < 112) {
+		/* Pad to 112 mod 128. */
+		memcpy(&ctx->buf[r], PAD, 112 - r);
+	} else {
+		/* Finish the current block and mix. */
+		memcpy(&ctx->buf[r], PAD, 128 - r);
+		SHA512_Transform(ctx->state, ctx->buf);
+
+		/* The start of the final block is all zeroes. */
+		memset(&ctx->buf[0], 0, 112);
+	}
+
+	/* Add the terminating bit-count. */
+	be64enc_vect(&ctx->buf[112], ctx->count, 16);
+
+	/* Mix in the final block. */
+	SHA512_Transform(ctx->state, ctx->buf);
+}
+
+/* SHA-512 initialization.  Begins a SHA-512 operation. */
 void
-sha512_init_ctx (struct sha512_ctx *ctx)
+SHA512_Init(SHA512_CTX * ctx)
 {
-  ctx->H[0] = UINT64_C (0x6a09e667f3bcc908);
-  ctx->H[1] = UINT64_C (0xbb67ae8584caa73b);
-  ctx->H[2] = UINT64_C (0x3c6ef372fe94f82b);
-  ctx->H[3] = UINT64_C (0xa54ff53a5f1d36f1);
-  ctx->H[4] = UINT64_C (0x510e527fade682d1);
-  ctx->H[5] = UINT64_C (0x9b05688c2b3e6c1f);
-  ctx->H[6] = UINT64_C (0x1f83d9abfb41bd6b);
-  ctx->H[7] = UINT64_C (0x5be0cd19137e2179);
 
-  ctx->total[0] = ctx->total[1] = 0;
-  ctx->buflen = 0;
+	/* Zero bits processed so far */
+	ctx->count[0] = ctx->count[1] = 0;
+
+	/* Magic initialization constants */
+	ctx->state[0] = 0x6a09e667f3bcc908ULL;
+	ctx->state[1] = 0xbb67ae8584caa73bULL;
+	ctx->state[2] = 0x3c6ef372fe94f82bULL;
+	ctx->state[3] = 0xa54ff53a5f1d36f1ULL;
+	ctx->state[4] = 0x510e527fade682d1ULL;
+	ctx->state[5] = 0x9b05688c2b3e6c1fULL;
+	ctx->state[6] = 0x1f83d9abfb41bd6bULL;
+	ctx->state[7] = 0x5be0cd19137e2179ULL;
 }
 
-
-/* Process the remaining bytes in the internal buffer and the usual
-   prolog according to the standard and write the result to RESBUF.
-
-   IMPORTANT: On some systems it is required that RESBUF is correctly
-   aligned for a 32 bits value.  */
-void *
-sha512_finish_ctx (struct sha512_ctx *ctx, void *resbuf)
-{
-  /* Take yet unprocessed bytes into account.  */
-  uint32_t bytes = ctx->buflen;
-  size_t pad;
-  unsigned int i;
-  unsigned char *rp = resbuf;
-
-  /* Now count remaining bytes.  */
-  ctx->total[0] += bytes;
-  if (ctx->total[0] < bytes)
-    ++ctx->total[1];
-
-  pad = bytes >= 112 ? 128 + 112 - bytes : 112 - bytes;
-  /* The first byte of padding should be 0x80 and the rest should be
-     zero.  (FIPS 180-2:5.1.2) */
-  ctx->buffer[bytes] = 0x80u;
-  XCRYPT_SECURE_MEMSET (&ctx->buffer[bytes+1], pad-1);
-
-  /* Put the 128-bit file length in big-endian *bits* at the end of
-     the buffer.  */
-  cpu_to_be64 (&ctx->buffer[bytes + pad],
-               (ctx->total[1] << 3) | (ctx->total[0] >> 61));
-  cpu_to_be64 (&ctx->buffer[bytes + pad + 8],
-               ctx->total[0] << 3);
-
-  /* Process last bytes.  */
-  sha512_process_block (ctx->buffer, bytes + pad + 16, ctx);
-
-  /* Put result from CTX in first 64 bytes following RESBUF.  */
-  for (i = 0; i < 8; ++i)
-    cpu_to_be64 (rp + i*8, ctx->H[i]);
-
-  XCRYPT_SECURE_MEMSET (ctx, sizeof (struct sha512_ctx));
-  return resbuf;
-}
-
-
+/* Add bytes into the hash */
 void
-sha512_process_bytes (const void *buffer, size_t len, struct sha512_ctx *ctx)
+SHA512_Update(SHA512_CTX * ctx, const void *in, size_t len)
 {
-  /* When we already have some bits in our internal buffer concatenate
-     both inputs first.  */
-  if (ctx->buflen != 0)
-    {
-      uint32_t left_over = ctx->buflen;
-      uint32_t add = 256 - left_over > len ? (uint32_t)len : 256 - left_over;
+	uint64_t bitlen[2];
+	uint64_t r;
+	const unsigned char *src = in;
 
-      memcpy (&ctx->buffer[left_over], buffer, add);
-      ctx->buflen += add;
+	/* Number of bytes left in the buffer from previous updates */
+	r = (ctx->count[1] >> 3) & 0x7f;
 
-      if (ctx->buflen > 128)
-        {
-          sha512_process_block (ctx->buffer, ctx->buflen & ~127u, ctx);
+	/* Convert the length into a number of bits */
+	bitlen[1] = ((uint64_t)len) << 3;
+	bitlen[0] = ((uint64_t)len) >> 61;
 
-          ctx->buflen &= 127;
-          /* The regions in the following copy operation cannot overlap.  */
-          memcpy (ctx->buffer, &ctx->buffer[(left_over + add) & ~127u],
-                  ctx->buflen);
-        }
+	/* Update number of bits */
+	if ((ctx->count[1] += bitlen[1]) < bitlen[1])
+		ctx->count[0]++;
+	ctx->count[0] += bitlen[0];
 
-      buffer = (const char *) buffer + add;
-      len -= add;
-    }
+	/* Handle the case where we don't need to perform any transforms */
+	if (len < SHA512_BLOCK_LENGTH - r) {
+		memcpy(&ctx->buf[r], src, len);
+		return;
+	}
 
-  /* Process available complete blocks.  */
-  if (len > 128)
-    {
-      sha512_process_block (buffer, len & ~127u, ctx);
-      buffer = (const char *) buffer + (len & ~127u);
-      len &= 127;
-    }
+	/* Finish the current block */
+	memcpy(&ctx->buf[r], src, SHA512_BLOCK_LENGTH - r);
+	SHA512_Transform(ctx->state, ctx->buf);
+	src += SHA512_BLOCK_LENGTH - r;
+	len -= SHA512_BLOCK_LENGTH - r;
 
-  /* Move remaining bytes into internal buffer.  */
-  if (len > 0)
-    {
-      size_t left_over = ctx->buflen;
+	/* Perform complete blocks */
+	while (len >= SHA512_BLOCK_LENGTH) {
+		SHA512_Transform(ctx->state, src);
+		src += SHA512_BLOCK_LENGTH;
+		len -= SHA512_BLOCK_LENGTH;
+	}
 
-      memcpy (&ctx->buffer[left_over], buffer, len);
-      left_over += len;
-      if (left_over >= 128)
-        {
-          sha512_process_block (ctx->buffer, 128, ctx);
-          left_over -= 128;
-          memcpy (ctx->buffer, &ctx->buffer[128], left_over);
-        }
-      ctx->buflen = (uint32_t)left_over;
-    }
+	/* Copy left over data into buffer */
+	memcpy(ctx->buf, src, len);
+}
+
+/*
+ * SHA-512 finalization.  Pads the input data, exports the hash value,
+ * and clears the context state.
+ */
+void
+SHA512_Final(unsigned char digest[MIN_SIZE(SHA512_DIGEST_LENGTH)],
+	SHA512_CTX *ctx)
+{
+
+	/* Add padding */
+	SHA512_Pad(ctx);
+
+	/* Write the hash */
+	be64enc_vect(digest, ctx->state, SHA512_DIGEST_LENGTH);
+
+	/* Clear the context state */
+	XCRYPT_SECURE_MEMSET(ctx, sizeof(*ctx));
+}
+
+/**
+ * SHA512_Buf(in, len, digest):
+ * Compute the SHA512 hash of ${len} bytes from ${in} and write it to ${digest}.
+ */
+void
+SHA512_Buf(const void * in, size_t len,
+	unsigned char digest[MIN_SIZE(SHA512_DIGEST_LENGTH)])
+{
+        SHA512_CTX ctx;
+
+        SHA512_Init(&ctx);
+        SHA512_Update(&ctx, in, len);
+        SHA512_Final(digest, &ctx);
 }
 
 #endif

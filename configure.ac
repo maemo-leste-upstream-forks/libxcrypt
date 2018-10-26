@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 m4_include([m4/zw_automodern.m4])
 AC_INIT([xcrypt],
-        [4.2.2],
+        [4.2.3],
         [https://github.com/besser82/libxcrypt/issues],
         [libxcrypt],
         [https://github.com/besser82/libxcrypt])
@@ -11,10 +11,10 @@ AC_CONFIG_SRCDIR([crypt.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
   Makefile
+  crypt.h.in
   libxcrypt.pc
-  crypt-base.h
 ])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([tar-v7])
 
 AH_TOP(
 [#ifndef _CRYPT_CONFIG_H
@@ -223,7 +223,7 @@ AC_ARG_ENABLE([hashes],
         [--enable-hashes=HASHES],
         [Select hash methods to support.  Acceptable values are
          'all' or a comma-separated list of names from the file
-         'hashes.lst' and/or the keywords 'strong', 'altlinux',
+         'hashes.lst' and/or the keywords 'strong', 'alt',
          'freebsd', 'glibc', 'netbsd', 'openbsd', 'osx', 'owl',
          'solaris', and 'suse' which select groups of methods
          as described in that file.

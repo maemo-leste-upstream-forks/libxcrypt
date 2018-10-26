@@ -1,6 +1,7 @@
 # http://www.gnu.org/software/automake
 
 /Makefile
+/Makefile.deps
 /Makefile.in
 /.deps/
 /.libs/
@@ -18,7 +19,7 @@
 /config.status
 /m4/config.sub
 /configure
-/crypt-base.h
+/crypt.h.in
 /m4/depcomp
 /m4/install-sh
 /libtool
@@ -47,6 +48,7 @@
 /crypt-hashes.h
 /crypt-symbol-vers.h
 /libcrypt.map
+/gen-des-tables
 /test-alg-des
 /test-alg-hmac-sha1
 /test-alg-md4

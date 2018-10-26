@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/besser82/libxcrypt.svg?branch=develop)](https://travis-ci.org/besser82/libxcrypt)
 [![codecov](https://codecov.io/gh/besser82/libxcrypt/branch/develop/graph/badge.svg)](https://codecov.io/gh/besser82/libxcrypt)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/17073/badge.svg)](https://scan.coverity.com/projects/besser82-libxcrypt)
 
 README for libxcrypt
 ====================
@@ -62,7 +63,7 @@ these things before building the software.
 
 Building from a Git checkout additionally requires the Autotools
 suite: `autoconf`, `automake`, `libtool`, and `pkg-config`.
-Run `autoreconf -i` at the top level of the source tree, and then
+Run `./bootstrap` at the top level of the source tree, and then
 follow the instructions in `INSTALL` (which is created by that command).
 
 The oldest versions of Autotools components that are known to work

@@ -1,8 +1,10 @@
 libcrypt.so.1 libcrypt1 #MINVER#
  GLIBC_2.2.5@GLIBC_2.2.5 1:4.1.0
  XCRYPT_2.0@XCRYPT_2.0 1:4.1.0
+ XCRYPT_4.3@XCRYPT_4.3 1:4.3.0
  crypt@GLIBC_2.2.5 1:4.1.0
  crypt@XCRYPT_2.0 1:4.1.0
+ crypt_checksalt@XCRYPT_4.3 1:4.3.0
  crypt_gensalt@XCRYPT_2.0 1:4.1.0
  crypt_gensalt_ra@XCRYPT_2.0 1:4.1.0
  crypt_gensalt_rn@XCRYPT_2.0 1:4.1.0

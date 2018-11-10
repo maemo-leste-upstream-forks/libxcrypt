@@ -1,5 +1,4 @@
 # http://www.gnu.org/software/automake
-
 /Makefile
 /Makefile.deps
 /Makefile.in
@@ -8,7 +7,6 @@
 /INSTALL
 
 # http://www.gnu.org/software/autoconf
-
 /autom4te.cache
 /aclocal.m4
 /m4/compile
@@ -35,7 +33,6 @@
 /libxcrypt.pc
 
 # compiler output
-
 *.gcda
 *.gcno
 *.la
@@ -44,12 +41,15 @@
 *.o
 *.so
 *.trs
+*.T
 /crypt.h
 /crypt-hashes.h
 /crypt-symbol-vers.h
 /libcrypt.map
 /gen-des-tables
 /test-alg-des
+/test-alg-gost3411-2012
+/test-alg-gost3411-2012-hmac
 /test-alg-hmac-sha1
 /test-alg-md4
 /test-alg-md5
@@ -61,9 +61,12 @@
 /test-badsetting
 /test-bigcrypt
 /test-byteorder
+/test-checksalt
+/test-compile-strong-alias
 /test-crypt-badargs
 /test-crypt-bcrypt
 /test-crypt-des
+/test-crypt-gost-yescrypt
 /test-crypt-md5
 /test-crypt-nthash
 /test-crypt-pbkdf1-sha1
@@ -80,11 +83,9 @@
 /test-short-outbuf
 
 # backup-files
-
 *~
 
 # archives
-
 *.tar*
 
 # Valgrind
@@ -93,3 +94,7 @@ vgcore.*
 # Patch
 *.orig
 *.rej
+
+# Coverage
+all_coverage.info
+coverage.info

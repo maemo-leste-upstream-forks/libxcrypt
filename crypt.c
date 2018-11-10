@@ -17,11 +17,9 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include "crypt-port.h"
-#include "crypt-private.h"
 
 #include <errno.h>
 #include <stdlib.h>
-#include <limits.h>
 
 /* The internal storage area within struct crypt_data is used as
    follows.  We don't know what alignment the algorithm modules will
@@ -76,7 +74,7 @@ static const struct hashfn hash_algorithms[] =
   HASH_ALGORITHM_TABLE_ENTRIES
 };
 
-#if INCLUDE_des || INCLUDE_des_big
+#if INCLUDE_descrypt || INCLUDE_bigcrypt
 static int
 is_des_salt_char (char c)
 {
@@ -98,7 +96,7 @@ get_hashfn (const char *setting)
           if (!strncmp (setting, h->prefix, h->plen))
             return h;
         }
-#if INCLUDE_des || INCLUDE_des_big
+#if INCLUDE_descrypt || INCLUDE_bigcrypt
       else
         {
           if (setting[0] == '\0' ||
@@ -264,14 +262,16 @@ crypt_gensalt_rn (const char *prefix, unsigned long count,
 
   /* If the prefix is 0, that means to use the current best default.
      Note that this is different from the behavior when the prefix is
-     "", which selects DES.  HASH_ALGORITHM_DEFAULT is null when the
-     current default algorithm was disabled at configure time.  */
-  if (!prefix)
-    prefix = HASH_ALGORITHM_DEFAULT;
+     "", which selects DES.  HASH_ALGORITHM_DEFAULT is not defined when
+     the current default algorithm was disabled at configure time.  */
   if (!prefix)
     {
+#if defined HASH_ALGORITHM_DEFAULT
+      prefix = HASH_ALGORITHM_DEFAULT;
+#else
       errno = EINVAL;
       return 0;
+#endif
     }
 
   const struct hashfn *h = get_hashfn (prefix);
@@ -333,4 +333,25 @@ crypt_gensalt_ra (const char *prefix, unsigned long count,
   return result;
 }
 SYMVER_crypt_gensalt_ra;
+#endif
+
+#if INCLUDE_crypt_checksalt
+static_assert(CRYPT_SALT_OK == 0, "CRYPT_SALT_OK does not equal zero");
+
+int
+crypt_checksalt (const char *setting)
+{
+  int retval = CRYPT_SALT_INVALID;
+
+  if (!setting)
+    return retval;
+
+  const struct hashfn *h = get_hashfn (setting);
+
+  if (h)
+    retval = CRYPT_SALT_OK;
+
+  return retval;
+}
+SYMVER_crypt_checksalt;
 #endif

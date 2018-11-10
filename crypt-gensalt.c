@@ -9,12 +9,11 @@
  */
 
 #include "crypt-port.h"
-#include "crypt-private.h"
 
 #include <errno.h>
 #include <stdio.h>
 
-#if INCLUDE_md5 || INCLUDE_sha256 || INCLUDE_sha512
+#if INCLUDE_md5crypt || INCLUDE_sha256crypt || INCLUDE_sha512crypt
 
 static const unsigned char _xcrypt_itoa64[64 + 1] =
   "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";

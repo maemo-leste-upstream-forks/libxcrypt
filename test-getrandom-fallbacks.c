@@ -8,13 +8,11 @@
    details.  */
 
 #include "crypt-port.h"
-#include "crypt-private.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <limits.h>
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>

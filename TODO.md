@@ -21,11 +21,6 @@ It was last updated 20 October 2018.
   * Make sure the symbol versioning macros work with all of the
     compilers that anyone needs (they use GCC extensions that clang
     also supports).
-  * `alg-yescrypt-common.c` contains #ifdeffage for use of
-    `posix_memalign` that isn’t wired up to autoconf
-    * possibly this should just be removed; does anything have
-      `posix_memalign` but not `mmap`? it’s only a compile-time
-      fallback, not a runtime fallback
 
 * Hardening
   * bcrypt-like selftest/memory scribble for all hashing methods
@@ -98,8 +93,8 @@ It was last updated 20 October 2018.
   * Replace crypt-md5.c with original md5crypt from FreeBSD?
   * Other files subject to the (L)GPL are crypt.c, crypt-static.c,
     crypt-gensalt-static.c, crypt-obsolete.h, crypt-port.h,
-    crypt-private.h, test-badsalt.c.  It is not clear to me how much
-    material originally assigned to the FSF remains in these files.
+    test-badsalt.c.  It is not clear to me how much material originally
+    assigned to the FSF remains in these files.
     Several of them are API definitions and trivial wrappers that
     could not be meaningfully changed without breaking them (so are
     arguably uncopyrightable).

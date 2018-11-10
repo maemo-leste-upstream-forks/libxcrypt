@@ -20,7 +20,7 @@
 
 #include "crypt-port.h"
 
-#if INCLUDE_yescrypt || INCLUDE_scrypt
+#if INCLUDE_yescrypt || INCLUDE_scrypt || INCLUDE_gost_yescrypt
 
 #include <stdint.h>
 #include <string.h>
@@ -163,7 +163,7 @@ static uint8_t *encode64_uint32_fixed(uint8_t *dst, size_t dstlen,
 	return dst;
 }
 
-static uint8_t *encode64(uint8_t *dst, size_t dstlen,
+uint8_t *encode64(uint8_t *dst, size_t dstlen,
     const uint8_t *src, size_t srclen)
 {
 	size_t i;
@@ -208,7 +208,7 @@ static const uint8_t *decode64_uint32_fixed(uint32_t *dst, uint32_t dstbits,
 	return src;
 }
 
-static const uint8_t *decode64(uint8_t *dst, size_t *dstlen,
+const uint8_t *decode64(uint8_t *dst, size_t *dstlen,
     const uint8_t *src, size_t srclen)
 {
 	size_t dstpos = 0;
@@ -264,7 +264,7 @@ static void memxor(unsigned char *dst, unsigned char *src, size_t size)
 		*dst++ ^= *src++;
 }
 
-static void encrypt(unsigned char *data, size_t datalen,
+static void yescrypt_sha256_cipher(unsigned char *data, size_t datalen,
     const yescrypt_binary_t *key, encrypt_dir_t dir)
 {
 	SHA256_CTX ctx;
@@ -443,7 +443,7 @@ uint8_t *yescrypt_r(const yescrypt_shared_t *shared, yescrypt_local_t *local,
 		salt = saltbin;
 
 		if (key)
-			encrypt(saltbin, saltlen, key, ENC);
+			yescrypt_sha256_cipher(saltbin, saltlen, key, ENC);
 	}
 
 	need = prefixlen + saltstrlen + 1 + HASH_LEN + 1;
@@ -456,7 +456,7 @@ uint8_t *yescrypt_r(const yescrypt_shared_t *shared, yescrypt_local_t *local,
 
 	if (key) {
 		insecure_memzero(saltbin, sizeof(saltbin));
-		encrypt(hashbin, sizeof(hashbin), key, ENC);
+		yescrypt_sha256_cipher(hashbin, sizeof(hashbin), key, ENC);
 	}
 
 	dst = buf;
@@ -598,4 +598,4 @@ uint8_t *yescrypt_encode_params_r(const yescrypt_params_t *params,
 	return buf;
 }
 
-#endif /* INCLUDE_yescrypt || INCLUDE_scrypt */
+#endif /* INCLUDE_yescrypt || INCLUDE_scrypt || INCLUDE_gost_yescrypt */

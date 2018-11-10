@@ -8,7 +8,6 @@
    details.  */
 
 #include "crypt-port.h"
-#include "crypt-private.h"
 
 #include <errno.h>
 #include <setjmp.h>
@@ -22,16 +21,16 @@
    methods.  */
 static const char *settings[] =
 {
-#if INCLUDE_des || INCLUDE_des_big
+#if INCLUDE_descrypt || INCLUDE_bigcrypt
   "Mp",
 #endif
-#if INCLUDE_des_xbsd
+#if INCLUDE_bsdicrypt
   "_J9..MJHn",
 #endif
-#if INCLUDE_md5
+#if INCLUDE_md5crypt
   "$1$MJHnaAke",
 #endif
-#if INCLUDE_nthash
+#if INCLUDE_nt
   "$3$",
 #endif
 #if INCLUDE_sunmd5
@@ -45,14 +44,14 @@ static const char *settings[] =
   "$md5$BPm.fm03$$",
   "$md5$BPm.fm03$$x",
 #endif
-#if INCLUDE_sha1
+#if INCLUDE_sha1crypt
   "$sha1$248488$ggu.H673kaZ5$",
 #endif
-#if INCLUDE_sha256
+#if INCLUDE_sha256crypt
   "$5$MJHnaAkegEVYHsFK",
   "$5$rounds=10191$MJHnaAkegEVYHsFK",
 #endif
-#if INCLUDE_sha512
+#if INCLUDE_sha512crypt
   "$6$MJHnaAkegEVYHsFK",
   "$6$rounds=10191$MJHnaAkegEVYHsFK",
 #endif
@@ -67,6 +66,9 @@ static const char *settings[] =
 #endif
 #if INCLUDE_scrypt
   "$7$CU..../....MJHnaAkegEVYHsFKkmfzJ1",
+#endif
+#if INCLUDE_gost_yescrypt
+  "$gy$j9T$MJHnaAkegEVYHsFKkmfzJ1",
 #endif
 };
 

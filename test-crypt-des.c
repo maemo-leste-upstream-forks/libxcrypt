@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#if INCLUDE_des || INCLUDE_des_xbsd || INCLUDE_des_big
+#if INCLUDE_descrypt || INCLUDE_bsdicrypt || INCLUDE_bigcrypt
 
 static const struct
 {
@@ -11,19 +11,21 @@ static const struct
   const char *input;
 } tests[] =
 {
-#if INCLUDE_des
+#if INCLUDE_descrypt || INCLUDE_bigcrypt
   /* traditional-DES test vectors from John the Ripper */
   { "CC", "CCNf8Sbh3HDfQ", "U*U*U*U*" },
-  { "CC", "CCNf8Sbh3HDfQ", "U*U*U*U*ignored" },
   { "CC", "CCX.K.MFy4Ois", "U*U***U" },
   { "CC", "CC4rMpbg9AMZ.", "U*U***U*" },
-  { "CC", "CC4rMpbg9AMZ.", "U*U***U*ignored" },
   { "CC", "CC4rMpbg9AMZ.", "\xd5\xaa\xd5\xaa\xaa\xaa\xd5\xaa" },
   { "XX", "XXxzOu6maQKqQ", "*U*U*U*U" },
   { "SD", "SDbsugeBiC58A", "" },
+#if INCLUDE_descrypt
+  { "CC", "CCNf8Sbh3HDfQ", "U*U*U*U*ignored" },
+  { "CC", "CC4rMpbg9AMZ.", "U*U***U*ignored" },
+#endif
 #endif
 
-#if INCLUDE_des_xbsd
+#if INCLUDE_bsdicrypt
   /* BSDI-extended-DES, ditto */
   { "_J9..CCCC", "_J9..CCCCXBrJUJV154M", "U*U*U*U*" },
   { "_J9..CCCC", "_J9..CCCCXUhOBTXzaiE", "U*U***U" },
@@ -43,7 +45,7 @@ static const struct
   { "_J9..SDSD", "_J9..SDSD5YGyRCr4W4c", "" },
 #endif
 
-#if INCLUDE_des_big
+#if INCLUDE_bigcrypt
   /* 10 bigcrypt test vectors from pw-fake-unix.gz from the openwall
      wiki.  All have two blocks.  The salt is padded with dots because
      crypt_r will only use bigcrypt if the setting string begins with

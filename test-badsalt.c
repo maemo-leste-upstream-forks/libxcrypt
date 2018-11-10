@@ -58,7 +58,7 @@ static const struct testcase testcases[] =
      from which we will derive many invalid setting strings.
      This is an expensive test, so where possible, the number of
      "rounds" of the hash function has been set abnormally low.  */
-#if INCLUDE_des
+#if INCLUDE_descrypt
   { "DES (trad.)",                          2, "Mp" },
   { "*DES (trad.), 1st char invalid -",     2, "-p" },
   { "*DES (trad.), 2nd char invalid -",     2, "M-" },
@@ -69,18 +69,18 @@ static const struct testcase testcases[] =
   { "*DES (trad.), 1st char invalid {",     2, "{p" },
   { "*DES (trad.), 2nd char invalid {",     2, "M{" },
 #endif
-#if INCLUDE_des_big
-  { "DES (bigcrypt)",                       2, "Mp............" },
-  { "*DES (bigcrypt), 1st char invalid -",  2, "-p............" },
-  { "*DES (bigcrypt), 2nd char invalid -",  2, "M-............" },
-  { "*DES (bigcrypt), 1st char invalid :",  2, ":p............" },
-  { "*DES (bigcrypt), 2nd char invalid :",  2, "M:............" },
-  { "*DES (bigcrypt), 1st char invalid [",  2, "[p............" },
-  { "*DES (bigcrypt), 2nd char invalid [",  2, "M[............" },
-  { "*DES (bigcrypt), 1st char invalid {",  2, "{p............" },
-  { "*DES (bigcrypt), 2nd char invalid {",  2, "M{............" },
+#if INCLUDE_bigcrypt
+  { "DES (bigcrypt)",                       14, "Mp............" },
+  { "*DES (bigcrypt), 1st char invalid -",  14, "-p............" },
+  { "*DES (bigcrypt), 2nd char invalid -",  14, "M-............" },
+  { "*DES (bigcrypt), 1st char invalid :",  14, ":p............" },
+  { "*DES (bigcrypt), 2nd char invalid :",  14, "M:............" },
+  { "*DES (bigcrypt), 1st char invalid [",  14, "[p............" },
+  { "*DES (bigcrypt), 2nd char invalid [",  14, "M[............" },
+  { "*DES (bigcrypt), 1st char invalid {",  14, "{p............" },
+  { "*DES (bigcrypt), 2nd char invalid {",  14, "M{............" },
 #endif
-#if INCLUDE_des_xbsd
+#if INCLUDE_bsdicrypt
   { "DES (BSDi)",                           9, "_J9..MJHn" },
   { "*DES (BSDi), 1st char invalid -",      9, "_-9..MJHn" },
   { "*DES (BSDi), 2nd char invalid -",      9, "_J-..MJHn" },
@@ -115,7 +115,7 @@ static const struct testcase testcases[] =
   { "*DES (BSDi), 7th char invalid {",      9, "_J9..MJ{n" },
   { "*DES (BSDi), 8th char invalid {",      9, "_J9..MJH{" },
 #endif
-#if INCLUDE_md5
+#if INCLUDE_md5crypt
   { "MD5 (FreeBSD)",                       12, "$1$MJHnaAke$" },
   { "*MD5 (FreeBSD) invalid char",         12, "$1$:JHnaAke$" },
 #endif
@@ -132,18 +132,18 @@ static const struct testcase testcases[] =
   { "*MD5 (Sun, rounds) invalid rounds 6", 25, "$md5,rounds=012$1xMeE.at$" },
   { "*MD5 (Sun, rounds) invalid rounds 7", 32, "$md5,rounds=4294967295$1xMeE.at$" },
 #endif
-#if INCLUDE_nthash
+#if INCLUDE_nt
   { "NTHASH (bare)",                        3, "$3$"                           },
   { "NTHASH (fake salt)",                   3, "$3$__not_used__c809a450df09a3" },
 #endif
-#if INCLUDE_sha1
+#if INCLUDE_sha1crypt
   { "HMAC-SHA1",                           27, "$sha1$123$GGXpNqoJvglVTkGU$" },
   { "*HMAC-SHA1 invalid char",             27, "$sha1$123$:GXpNqoJvglVTkGU$" },
   { "*HMAC-SHA1 invalid rounds 1",         27, "$sha1$:23$GGXpNqoJvglVTkGU$" },
   { "*HMAC-SHA1 invalid rounds 2",         27, "$sha1$12:$GGXpNqoJvglVTkGU$" },
   { "*HMAC-SHA1 invalid rounds 3",         27, "$sha1$12:$GGXpNqoJvglVTkGU$" },
 #endif
-#if INCLUDE_sha256
+#if INCLUDE_sha256crypt
   { "SHA-256 (plain)",                     20, "$5$MJHnaAkegEVYHsFK$"             },
   { "*SHA-256 (plain) invalid char",       20, "$5$:JHnaAkegEVYHsFK$"             },
   { "SHA-256 (rounds)",                    32, "$5$rounds=1000$MJHnaAkegEVYHsFK$" },
@@ -155,7 +155,7 @@ static const struct testcase testcases[] =
   { "*SHA-256 (rounds) invalid rounds 6",  32, "$5$rounds=0100$MJHnaAkegEVYHsFK$" },
   { "*SHA-256 (rounds) invalid rounds 7",  38, "$5$rounds=4294967295$MJHnaAkegEVYHsFK$" },
 #endif
-#if INCLUDE_sha512
+#if INCLUDE_sha512crypt
   { "SHA-512 (plain)",                     20, "$6$MJHnaAkegEVYHsFK$"             },
   { "*SHA-512 (plain) invalid char",       20, "$6$:JHnaAkegEVYHsFK$"             },
   { "SHA-512 (rounds)",                    32, "$6$rounds=1000$MJHnaAkegEVYHsFK$" },
@@ -214,6 +214,17 @@ static const struct testcase testcases[] =
   { "*scrypt invalid params 13",           29, "$7$C$:.../....SodiumChloride$" },
   { "*scrypt invalid params 14",           29, "$7$C6.$:./....SodiumChloride$" },
   { "*scrypt invalid params 15",           29, "$7$C6..../.$:.SodiumChloride$" },
+#endif
+#if INCLUDE_gost_yescrypt
+  { "gost-yescrypt",                       31, "$gy$j9T$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid char 1",       31, "$gy$j9T$:KXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid char 2",       19, "$gy$j9T$PKXc:hCOS$" },
+  { "*gost-yescrypt invalid params 1",     31, "$gy$:9T$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid params 2",     31, "$gy$j:T$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid params 3",     31, "$gy$j9:$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid params 4",     31, "$gy$$9T$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid params 5",     31, "$gy$j$:$PKXc3hCOSyMqdaEQArI62/$" },
+  { "*gost-yescrypt invalid params 6",     31, "$gy$j9$$PKXc3hCOSyMqdaEQArI62/$" },
 #endif
 };
 
@@ -414,10 +425,19 @@ test_one_case (const struct testcase *t,
 
       /* However, an invalid character anywhere within the prefix should
          cause hashing to fail.  */
-      for (size_t i = 1; i < t->plen; i++)
+      size_t plen = t->plen;
+
+      /* des_big only values the first two characters of the setting,
+         but needs strlen(setting) >= 14.  */
+      const char *des_big_label = "DES (bigcrypt)";
+      if (!strcmp (t->label, des_big_label))
         {
-          p = page + pagesize - (t->plen + 2 - i);
-          memcpy (p, goodhash, t->plen - i);
+          plen = 2;
+        }
+      for (size_t i = 1; i < plen; i++)
+        {
+          p = page + pagesize - (plen + 2 - i);
+          memcpy (p, goodhash, plen - i);
           if (!test_one_setting (t->label, p, cd, false))
             return false;
         }

@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 m4_include([m4/zw_automodern.m4])
 AC_INIT([xcrypt],
-        [4.2.3],
+        [4.3.0],
         [https://github.com/besser82/libxcrypt/issues],
         [libxcrypt],
         [https://github.com/besser82/libxcrypt])
@@ -22,13 +22,21 @@ AH_TOP(
 AH_BOTTOM(
 [#endif /* config.h */])
 
+# PKG_INSTALLDIR may not be defined, but we have a
+# compatibility replacement.
+m4_pattern_allow([PKG_INSTALLDIR])
+
 # Checks for programs.
 AC_CANONICAL_HOST
 AC_PROG_CC
 
 # Dependencies
 PKG_PROG_PKG_CONFIG
-PKG_INSTALLDIR
+if $PKG_CONFIG --atleast-pkgconfig-version 0.27; then
+  PKG_INSTALLDIR
+else
+  PKG_INSTALLDIR_COMPAT
+fi
 
 # C99 language and library features are used unconditionally.
 # Don't even try to build with an older compiler.
@@ -45,13 +53,6 @@ AC_SYS_LARGEFILE
 zw_SIMPLE_ENABLE_WARNINGS
 LT_INIT
 
-# Check for system's endianness
-AC_C_BIGENDIAN(
-   AC_DEFINE([IS_BIGENDIAN], 1,
-    [Define to 1 if system's architecture is big-endian.]),
-   AC_DEFINE([IS_BIGENDIAN], 0,
-    [Define to 0 if system's architecture is little-endian.])
-)
 # One of the test scripts needs to use -dD.
 AC_CACHE_CHECK([whether the preprocessor ($CPP) supports -dD],
   [ac_cv_prog_cc_dD],
@@ -96,15 +97,6 @@ __END_DECLS
     [ac_cv_header_sys_cdefs_begin_end_decls=yes],
     [ac_cv_header_sys_cdefs_begin_end_decls=no])
   ])
-  AC_CACHE_CHECK([whether sys/cdefs.h defines __nonnull],
-                 [ac_cv_header_sys_cdefs_nonnull], [
-    AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-#include <sys/cdefs.h>
-extern char *foo(char *, char *) __nonnull ((1, 2));
-    ]])],
-    [ac_cv_header_sys_cdefs_nonnull=yes],
-    [ac_cv_header_sys_cdefs_nonnull=no])
-  ])
   AC_CACHE_CHECK([whether sys/cdefs.h defines __THROW],
                  [ac_cv_header_sys_cdefs_THROW], [
     AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
@@ -116,16 +108,11 @@ extern void foo(void) __THROW;
   ])],
 dnl AS_IF else
  [ac_cv_header_sys_cdefs_begin_end_decls=no
-  ac_cv_header_sys_cdefs_nonnull=no
   ac_cv_header_sys_cdefs_THROW=no])
 
 if test $ac_cv_header_sys_cdefs_begin_end_decls = yes; then
   AC_DEFINE([HAVE_SYS_CDEFS_BEGIN_END_DECLS], 1,
     [Define if <sys/cdefs.h> defines __BEGIN_DECLS and __END_DECLS.])
-fi
-if test $ac_cv_header_sys_cdefs_nonnull = yes; then
-  AC_DEFINE([HAVE_SYS_CDEFS_NONNULL], 1,
-    [Define if <sys/cdefs.h> defines __nonnull.])
 fi
 if test $ac_cv_header_sys_cdefs_THROW = yes; then
   AC_DEFINE([HAVE_SYS_CDEFS_THROW], 1,
@@ -136,8 +123,50 @@ fi
 zw_C_ALIGNAS
 zw_C_ALIGNOF
 zw_C_MAX_ALIGN_T
+zw_C_ENDIANNESS
 zw_C_STATIC_ASSERT
 zw_PROG_LD_WRAP
+AX_CHECK_VSCRIPT
+
+# FIXME: This only checks whether the linker accepts either
+# -Wl,-z,defs or -Wl,--no-undefined.  It doesn't check that the switch
+# actually does what we want it to do.
+AC_CACHE_CHECK([how to make linking fail when undefined symbols remain],
+  [ac_cv_ld_no_undefined], [
+  ac_cv_ld_no_undefined=unknown
+  SAVED_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$SAVED_LDFLAGS -Wl,-z,defs"
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([], [int i = 1;])],
+    [ac_cv_ld_no_undefined=-Wl,-z,defs])
+  if test "x$ac_cv_ld_no_undefined" = xunknown; then
+    LDFLAGS="$SAVED_LDFLAGS -Wl,--no-undefined"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [int i = 1;])],
+      [ac_cv_ld_no_undefined=-Wl,--no-undefined])
+  fi
+  LDFLAGS="$SAVED_LDFLAGS"])
+
+UNDEF_FLAG=
+if test "x$ac_cv_ld_no_undefined" != xunknown; then
+  UNDEF_FLAG="$ac_cv_ld_no_undefined"
+fi
+AC_SUBST([UNDEF_FLAG])
+
+# FIXME: This only checks whether the linker accepts -Wl,-z,text.
+# It doesn't check that the switch actually does what we want it to do.
+AC_CACHE_CHECK([how to make linking fail when there are text relocations],
+  [ac_cv_ld_no_textrel], [
+  ac_cv_ld_no_textrel=unknown
+  SAVED_LDFLAGS="$LDFLAGS"
+  LDFLAGS="$SAVED_LDFLAGS -Wl,-z,text"
+  AC_LINK_IFELSE([AC_LANG_PROGRAM([], [int i = 1;])],
+    [ac_cv_ld_no_textrel=-Wl,-z,text])
+  LDFLAGS="$SAVED_LDFLAGS"])
+
+TEXT_RELOC_FLAG=
+if test "x$ac_cv_ld_no_textrel" != xunknown; then
+  TEXT_RELOC_FLAG="$ac_cv_ld_no_textrel"
+fi
+AC_SUBST([TEXT_RELOC_FLAG])
 
 # Checks for library functions.
 AC_CHECK_FUNCS_ONCE([
@@ -197,7 +226,9 @@ AC_ARG_ENABLE([obsolete-api],
          be linked against the obsolete APIs (bigcrypt, fcrypt, encrypt, setkey)
          in any case. [default=yes]]
     ),
-    [case "${enableval}" in
+    [enableval="`AS_ECHO("$enableval") |
+       $SED -e 'y!ABCDEFGHIJKLMNOPQRSTUVWXYZ-!abcdefghijklmnopqrstuvwxyz_!'`"
+     case "${enableval}" in
         alt|glibc|owl)
             enable_obsolete_api=1
             enable_compat_suse=0
@@ -230,8 +261,9 @@ AC_ARG_ENABLE([hashes],
          The default is 'all'.
          Note: if binary compatibility with any historic libcrypt is
          desired (i.e. any --enable-obsolete-api setting other than
-         'no'), the 'des' hash must be enabled.]),
-    [hashes_selected=$enableval],
+         'no'), the 'descrypt' hash must be enabled.]),
+    [hashes_selected="`AS_ECHO("$enableval") |
+      $SED -e 'y!ABCDEFGHIJKLMNOPQRSTUVWXYZ-!abcdefghijklmnopqrstuvwxyz_!'`"],
     [hashes_selected=all]
 )
 # This code must run after AC_PROG_AWK.
@@ -247,7 +279,7 @@ AC_SUBST([hashes_enabled])
 # If the traditional DES hash is disabled, then the obsolete APIs are
 # implicitly disabled.
 case "$hashes_enabled" in
-    *,des,*) ;;
+    *,descrypt,*) ;;
     *)
        if test x"$COMPAT_ABI" != xno; then
          AC_MSG_WARN(

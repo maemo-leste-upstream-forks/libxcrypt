@@ -3,7 +3,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 
 static const char *const entropy[] =
 {
@@ -14,10 +13,19 @@ static const char *const entropy[] =
   0
 };
 
-#if INCLUDE_des || INCLUDE_des_big
+#if INCLUDE_descrypt
 static const char *const des_expected_output[] = { "Mp", "Pp", "ZH", "Uh"};
 #endif
-#if INCLUDE_des_xbsd
+#if INCLUDE_bigcrypt && !INCLUDE_descrypt
+static const char *const big_expected_output[] =
+{
+  "Mp............",
+  "Pp............",
+  "ZH............",
+  "Uh............"
+};
+#endif
+#if INCLUDE_bsdicrypt
 static const char *const bsdi_expected_output[] =
 {
   "_J9..MJHn",
@@ -47,7 +55,7 @@ static const char *const bsdi_expected_output_h[] =
   "_zzzzUqGB"
 };
 #endif
-#if INCLUDE_md5
+#if INCLUDE_md5crypt
 static const char *const md5_expected_output[] =
 {
   "$1$MJHnaAke",
@@ -56,7 +64,7 @@ static const char *const md5_expected_output[] =
   "$1$UqGBkVu0"
 };
 #endif
-#if INCLUDE_nthash
+#if INCLUDE_nt
 static const char *const nthash_expected_output[] =
 {
   "$3$__not_used__c809a450df09a3",
@@ -88,7 +96,7 @@ static const char *const sunmd5_expected_output_h[] =
   "$md5,rounds=4294938668$p.5e9AQf$",
 };
 #endif
-#if INCLUDE_sha1
+#if INCLUDE_sha1crypt
 static const char *const sha1_expected_output[] =
 {
   "$sha1$248488$ggu.H673kaZ5$",
@@ -111,7 +119,7 @@ static const char *const sha1_expected_output_h[] =
   "$sha1$3486175838$1j.eVxRfNAPO$",
 };
 #endif
-#if INCLUDE_sha256
+#if INCLUDE_sha256crypt
 static const char *const sha256_expected_output[] =
 {
   "$5$MJHnaAkegEVYHsFK",
@@ -141,7 +149,7 @@ static const char *const sha256_expected_output_h[] =
   "$5$rounds=999999999$UqGBkVu01rurVZqg"
 };
 #endif
-#if INCLUDE_sha512
+#if INCLUDE_sha512crypt
 static const char *const sha512_expected_output[] =
 {
   "$6$MJHnaAkegEVYHsFK",
@@ -261,6 +269,29 @@ static const char *scrypt_expected_output_h[] =
   "$7$GU..../....UqGBkVu01rurVZqgNchTB0"
 };
 #endif
+#if INCLUDE_gost_yescrypt
+static const char *gost_yescrypt_expected_output[] =
+{
+  "$gy$j9T$MJHnaAkegEVYHsFKkmfzJ1",
+  "$gy$j9T$PKXc3hCOSyMqdaEQArI62/",
+  "$gy$j9T$ZAFlICwYRETzIzIjEIC86.",
+  "$gy$j9T$UqGBkVu01rurVZqgNchTB0"
+};
+static const char *gost_yescrypt_expected_output_l[] =
+{
+  "$gy$j75$MJHnaAkegEVYHsFKkmfzJ1",
+  "$gy$j75$PKXc3hCOSyMqdaEQArI62/",
+  "$gy$j75$ZAFlICwYRETzIzIjEIC86.",
+  "$gy$j75$UqGBkVu01rurVZqgNchTB0"
+};
+static const char *gost_yescrypt_expected_output_h[] =
+{
+  "$gy$jFT$MJHnaAkegEVYHsFKkmfzJ1",
+  "$gy$jFT$PKXc3hCOSyMqdaEQArI62/",
+  "$gy$jFT$ZAFlICwYRETzIzIjEIC86.",
+  "$gy$jFT$UqGBkVu01rurVZqgNchTB0"
+};
+#endif
 
 struct testcase
 {
@@ -280,11 +311,15 @@ struct testcase
 
 static const struct testcase testcases[] =
 {
-#if INCLUDE_des || INCLUDE_des_big
+#if INCLUDE_descrypt
   { "",      des_expected_output,       2,  0, 0 },
   // DES doesn't have variable round count.
 #endif
-#if INCLUDE_des_xbsd
+#if INCLUDE_bigcrypt && !INCLUDE_descrypt
+  { "",      big_expected_output,       14,  0, 0 },
+  // bigcrypt doesn't have variable round count.
+#endif
+#if INCLUDE_bsdicrypt
   { "_",     bsdi_expected_output,      9,  0, 0 },
   // BSDI/DES always emits a round count.
   // The _r expectation is used to verify that even inputs are
@@ -293,11 +328,11 @@ static const struct testcase testcases[] =
   { "_",     bsdi_expected_output_l,    9,  0, MIN_LINEAR_COST },
   { "_",     bsdi_expected_output_h,    9,  0, MAX_LINEAR_COST },
 #endif
-#if INCLUDE_md5
+#if INCLUDE_md5crypt
   { "$1$",   md5_expected_output,      11,  0, 0 },
   // MD5/BSD doesn't have variable round count.
 #endif
-#if INCLUDE_nthash
+#if INCLUDE_nt
   { "$3$",   nthash_expected_output,   29,  0, 0 },
   // NTHASH doesn't have variable round count.
 #endif
@@ -307,19 +342,19 @@ static const struct testcase testcases[] =
   { "$md5", sunmd5_expected_output_l,  27,  0, MIN_LINEAR_COST },
   { "$md5", sunmd5_expected_output_h,  32,  0, MAX_LINEAR_COST },
 #endif
-#if INCLUDE_sha1
+#if INCLUDE_sha1crypt
   { "$sha1", sha1_expected_output,     26, 34, 0 },
   // SHA1/PBKDF always emits a round count.
   { "$sha1", sha1_expected_output_l,   21, 29, MIN_LINEAR_COST },
   { "$sha1", sha1_expected_output_h,   30, 38, MAX_LINEAR_COST },
 #endif
-#if INCLUDE_sha256
+#if INCLUDE_sha256crypt
   { "$5$",   sha256_expected_output,   19,  0, 0 },
   { "$5$",   sha256_expected_output_r, 32,  0, 10191 },
   { "$5$",   sha256_expected_output_l, 31,  0, MIN_LINEAR_COST },
   { "$5$",   sha256_expected_output_h, 36,  0, MAX_LINEAR_COST },
 #endif
-#if INCLUDE_sha512
+#if INCLUDE_sha512crypt
   { "$6$",   sha512_expected_output,   19,  0, 0 },
   { "$6$",   sha512_expected_output_r, 32,  0, 10191 },
   { "$6$",   sha512_expected_output_l, 31,  0, MIN_LINEAR_COST },
@@ -350,8 +385,38 @@ static const struct testcase testcases[] =
   { "$7$",   scrypt_expected_output_l, 36, 36,  6 },
   { "$7$",   scrypt_expected_output_h, 36, 36, 11 },
 #endif
+#if INCLUDE_gost_yescrypt
+  { "$gy$",  gost_yescrypt_expected_output,   30, 30,  0 },
+  { "$gy$",  gost_yescrypt_expected_output_l, 30, 30,  1 },
+  { "$gy$",  gost_yescrypt_expected_output_h, 30, 30, 11 },
+#endif
   { 0, 0, 0, 0, 0 }
 };
+
+/* The "best available" hashing method.  */
+#if INCLUDE_yescrypt
+# define EXPECTED_DEFAULT_PREFIX "$y$"
+#elif INCLUDE_gost_yescrypt
+# define EXPECTED_DEFAULT_PREFIX "$gy$"
+#elif INCLUDE_scrypt
+# define EXPECTED_DEFAULT_PREFIX "$7$"
+#elif INCLUDE_bcrypt
+# define EXPECTED_DEFAULT_PREFIX "$2b$"
+#elif INCLUDE_sha512crypt
+# define EXPECTED_DEFAULT_PREFIX "$6$"
+#elif INCLUDE_sha256crypt
+# define EXPECTED_DEFAULT_PREFIX "$5$"
+#endif
+
+#if CRYPT_GENSALT_IMPLEMENTS_DEFAULT_PREFIX
+# ifndef EXPECTED_DEFAULT_PREFIX
+#  error "Which hashing algorithm is the default?"
+# endif
+#else
+# ifdef EXPECTED_DEFAULT_PREFIX
+#  error "Default hashing algorithm should be available"
+# endif
+#endif
 
 int
 main (void)
@@ -423,15 +488,44 @@ main (void)
                      tcase->prefix, tcase->rounds, ent, salt);
 
           XCRYPT_STRCPY_OR_ABORT (prev_output, CRYPT_GENSALT_OUTPUT_SIZE, salt);
-        }
-    }
 
-  /* Currently, passing a null pointer as the prefix argument to
-     crypt_gensalt is supposed to produce a yescrypt setting
-     string.  */
+	  /* Test if crypt works with this salt. */
+	  if (!tcase->rounds)
+	    {
+#define PASSW "alexander"
+	      static struct crypt_data a, b;
+	      if (!crypt_rn (PASSW, salt, &a, sizeof(a)))
+		{
+		  fprintf (stderr, "ERROR: %s/%u -> crypt(gensalt) fail\n",
+			   tcase->prefix, ent);
+		  status = 1;
+		}
+	      else if (!crypt_rn (PASSW, a.output, &b, sizeof(b)))
+		{
+		  fprintf (stderr, "ERROR: %s/%u -> crypt(crypt(gensalt)) fail\n",
+			   tcase->prefix, ent);
+		  status = 1;
+		}
+	      else if (strcmp (a.output, b.output))
+		{
+		  fprintf (stderr, "ERROR: %s/%u -> crypt(gensalt) != crypt(crypt(gensalt))\n",
+			   tcase->prefix, ent);
+		  status = 1;
+		}
+	      else
+		{
+		  fprintf (stderr, "   ok: %s/%u -> crypt works with this salt\n",
+			   tcase->prefix, ent);
+		}
+	    }
+	}
+    }
+#if CRYPT_GENSALT_IMPLEMENTS_DEFAULT_PREFIX
+  /* Passing a null pointer as the prefix argument to crypt_gensalt is
+     supposed to tell it to use the "best available" hashing method.  */
   {
     char *setting1, *setting2;
-    setting1 = crypt_gensalt_ra ("$y$", 0, entropy[0], 16);
+    setting1 = crypt_gensalt_ra (EXPECTED_DEFAULT_PREFIX, 0, entropy[0], 16);
     setting2 = crypt_gensalt_ra (0, 0, entropy[0], 16);
     if ((setting1 == 0 && setting2 != 0) ||
         (setting1 != 0 && setting2 == 0) ||
@@ -446,6 +540,17 @@ main (void)
     free (setting1);
     free (setting2);
   }
+#else
+  {
+    char *setting = crypt_gensalt_ra (0, 0, entropy[0], 16);
+    if (setting)
+      {
+        printf ("FAILED: crypt_gensalt null -> %s (null expected)\n", setting);
+        status = 1;
+      }
+    free (setting);
+  }
+#endif
 
 #if INCLUDE_bcrypt
   /* FIXME: This test is a little too specific.  It used to be in

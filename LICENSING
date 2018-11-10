@@ -12,9 +12,8 @@ source tree.  For specific licensing terms consult the files themselves.
    crypt.c, crypt-static.c, crypt-gensalt-static.c, crypt-port.h
 
  * Copyright Free Software Foundation, Inc.; LGPL (v2.1 or later):
-   crypt.h, crypt-obsolete.h, crypt-private.h
-   crypt-md5.c,
-   test-crypt-badsalt.c, test-crypt-nonnull.c
+   crypt.h, crypt-obsolete.h, crypt-md5.c,
+   test-badsalt.c, test-crypt-nonnull.c
 
  * Copyright David Burren et al.; 3-clause BSD:
    alg-des.h, alg-des.c, alg-des-tables.c,
@@ -37,8 +36,23 @@ source tree.  For specific licensing terms consult the files themselves.
  * Copyright Colin Percival; 2-clause BSD:
    alg-sha512.h, alg-sha512.c
 
+ * Copyright Alexey Degtyarev; 2-clause BSD:
+   alg-gost3411-2012-const.h, alg-gost3411-2012-core.c,
+   alg-gost3411-2012-core.h, alg-gost3411-2012-precalc.h,
+   alg-gost3411-2012-ref.h
+
+ * Copyright Vitaly Chikunov, Björn Esser; 0-clause BSD:
+   alg-gost3411-2012-hmac.c, alg-gost3411-2012-hmac.h,
+   crypt-gost-yescrypt.c, test-alg-gost3411-2012.c,
+   test-alg-gost3411-2012-hmac.c, test-crypt-gost-yescrypt.c,
+   test-crypt-scrypt.c
+
  * Copyright Alexander Peslyak, Björn Esser; 0-clause BSD:
    crypt-scrypt.c
+
+ * Copyright Björn Esser; 0-clause BSD:
+   crypt-common.c, test-checksalt.c, test-compile-strong-alias.c,
+   test-short-outbuf.c
 
  * Copyright Michael Bretterklieber, Björn Esser et al.; 2-clause BSD:
    crypt-nthash.c
@@ -59,7 +73,9 @@ source tree.  For specific licensing terms consult the files themselves.
    byteorder.h, randombytes.c, test-byteorder.c
    test-alg-pbkdf-hmac-sha256.c
    gen-crypt-h.awk, gen-map.awk, gen-vers.awk
-   test-symbols-compat, test-symbols-renames, test-symbols-static
+   test-badsetting.c, test-crypt-badargs.c, test-getrandom-fallbacks.c,
+   test-getrandom-interface.c, test-symbols-compat.sh,
+   test-symbols-renames.sh, test-symbols-static.sh
    m4/zw_alignment.m4, m4/zw_static_assert.m4, m4/skip-if-exec-format-error
 
  * Copyright Zack Weinberg and Free Software Foundation, Inc;
@@ -68,6 +84,13 @@ source tree.  For specific licensing terms consult the files themselves.
 
  * Copyright <vt at altlinux.org>; 0-clause BSD:
    crypt-yescrypt.c, test-crypt-yescrypt.c
+
+ * Copyright Kevin Cernekee; BSD alike:
+   m4/ax_check_vscript.m4
+
+ * Copyright Scott James Remnant, Dan Nicholson;
+   GPL (v2 or later), with Autoconf exception:
+   m4/pkg_installdir_compat.m4
 
  * Copyright holders unknown, no statement of license (all of these
    files are part of the testsuite and do not contribute to the

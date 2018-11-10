@@ -32,28 +32,26 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <limits.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
 #ifdef HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
 #endif
+#ifdef HAVE_ENDIAN_H
+#include <endian.h>
+#endif
+#ifdef HAVE_SYS_ENDIAN_H
+#include <sys/endian.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
 
 #ifndef HAVE_SYS_CDEFS_THROW
 #define __THROW /* nothing */
 #endif
-
-/* Version of __GNUC_PREREQ with trailing underscores for BSD
-   compatibility.  */
-#ifndef __GNUC_PREREQ__
-# define __GNUC_PREREQ__(ma, mi) __GNUC_PREREQ(ma, mi)
-#endif
-
-/* While actually compiling the library, suppress the __nonnull tags
-   on the functions in crypt.h, so that internal checks for NULL are
-   not deleted by the compiler.  */
-#undef __nonnull
-#define __nonnull(param) /* nothing */
 
 /* Suppression of unused-argument warnings.  */
 #if defined __GNUC__ && __GNUC__ >= 3
@@ -67,11 +65,22 @@
    not all compiler support it properly.  Define MIN_SIZE appropriately
    so headers using it can be compiled using any compiler.
    Use like this:  void bar(int myArray[MIN_SIZE(10)]);  */
-#if (defined(__clang__) || __GNUC_PREREQ__(4, 6)) && \
-    (!defined(__STDC_VERSION__) || (__STDC_VERSION__ >= 199901))
+#if (defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L) && \
+    ((defined __GNUC__ && __GNUC__ > 4) || defined __clang__)
 #define MIN_SIZE(x) static (x)
 #else
 #define MIN_SIZE(x) (x)
+#endif
+
+/* Detect system endianness.  */
+#if ENDIANNESS_IS_BIG
+# define XCRYPT_USE_BIGENDIAN 1
+#elif ENDIANNESS_IS_LITTLE
+# define XCRYPT_USE_BIGENDIAN 0
+#elif ENDIANNESS_IS_PDP
+# error "Byte-order sensitive code in libxcrypt does not support PDP-endianness"
+#else
+# error "Unable to determine byte ordering"
 #endif
 
 /* static_assert shim.  */
@@ -103,8 +112,11 @@ typedef union
 } max_align_t;
 #endif
 
-/* Several files expect the traditional definitions of these macros.  */
+/* Several files expect the traditional definitions of these macros.
+   (We don't trust sys/param.h to define them correctly.)  */
+#undef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#undef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 /* ARRAY_SIZE is used in tests.  */
@@ -126,35 +138,23 @@ typedef union
   explicit_memset (s, 0x00, len)
 #else
 /* The best hope we have in this case.  */
-static inline void
-_xcrypt_secure_memset (void *s, size_t len)
-{
-  volatile unsigned char *c = s;
-  while (len--)
-    *c++ = 0x00;
-}
+#define INCLUDE_XCRYPT_SECURE_MEMSET 1
+extern void _crypt_secure_memset (void *, size_t);
 #define XCRYPT_SECURE_MEMSET(s, len) \
-  _xcrypt_secure_memset (s, len)
+  _crypt_secure_memset (s, len)
+#endif
+#ifndef INCLUDE_XCRYPT_SECURE_MEMSET
+#define INCLUDE_XCRYPT_SECURE_MEMSET 0
 #endif
 
 /* Provide a safe way to copy strings with the guarantee src,
    including its terminating '\0', will fit d_size bytes.
    The trailing bytes of d_size will be filled with '\0'.
    dst and src must not be NULL.  Returns strlen (src).  */
-static inline size_t
-_xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
-                         const void *src)
-{
-  assert (dst != NULL);
-  assert (src != NULL);
-  const size_t s_size = strlen ((const char *) src);
-  assert (d_size >= s_size + 1);
-  memcpy (dst, src, s_size);
-  XCRYPT_SECURE_MEMSET ((char *) dst + s_size, d_size - s_size);
-  return s_size;
-}
+extern size_t
+_crypt_strcpy_or_abort (void *, const size_t, const void *);
 #define XCRYPT_STRCPY_OR_ABORT(dst, d_size, src) \
-  _xcrypt_strcpy_or_abort (dst, d_size, src)
+  _crypt_strcpy_or_abort (dst, d_size, src)
 
 /* Per-symbol version tagging.  Currently we only know how to do this
    using GCC extensions.  */
@@ -163,8 +163,17 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 
 /* Define ALIASNAME as a strong alias for NAME.  */
 #define strong_alias(name, aliasname) _strong_alias(name, aliasname)
-#define _strong_alias(name, aliasname) \
+
+/* Darwin doesn't support alias attributes.  */
+#ifndef __APPLE__
+# define _strong_alias(name, aliasname) \
   extern __typeof (name) aliasname __attribute__ ((alias (#name)))
+#else
+# define _strong_alias(name, aliasname) \
+  __asm__(".globl _" #aliasname); \
+  __asm__(".set _" #aliasname ", _" #name); \
+  extern __typeof(name) aliasname
+#endif
 
 /* Set the symbol version for EXTNAME, which uses INTNAME as its
    implementation.  */
@@ -230,6 +239,14 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 #define symver_ref(extstr, intname, version) \
   symver_set(extstr, intname, version, "@")
 
+/* Define configuration macros used during compile-time by the
+   GOST R 34.11-2012 "Streebog" hash function.  */
+#if XCRYPT_USE_BIGENDIAN
+#define __GOST3411_BIG_ENDIAN__ 1
+#else
+#define __GOST3411_LITTLE_ENDIAN__ 1
+#endif
+
 /* Get the set of hash algorithms to be included and some related
    definitions.  */
 #include "crypt-hashes.h"
@@ -242,7 +259,7 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 
 #define get_random_bytes         _crypt_get_random_bytes
 
-#if INCLUDE_des || INCLUDE_des_xbsd || INCLUDE_des_big
+#if INCLUDE_descrypt || INCLUDE_bsdicrypt || INCLUDE_bigcrypt
 #define des_crypt_block          _crypt_des_crypt_block
 #define des_set_key              _crypt_des_set_key
 #define des_set_salt             _crypt_des_set_salt
@@ -258,58 +275,107 @@ _xcrypt_strcpy_or_abort (void *dst, const size_t d_size,
 #define psbox                    _crypt_psbox
 #endif
 
-#if INCLUDE_nthash
+#if INCLUDE_nt
 #define MD4_Init   _crypt_MD4_Init
 #define MD4_Update _crypt_MD4_Update
 #define MD4_Final  _crypt_MD4_Final
 #endif
 
-#if INCLUDE_md5 || INCLUDE_sunmd5
+#if INCLUDE_md5crypt || INCLUDE_sunmd5
 #define MD5_Init   _crypt_MD5_Init
 #define MD5_Update _crypt_MD5_Update
 #define MD5_Final  _crypt_MD5_Final
 #endif
 
-#if INCLUDE_sha1
+#if INCLUDE_sha1crypt
 #define hmac_sha1_process_data   _crypt_hmac_sha1_process_data
 #define sha1_finish_ctx          _crypt_sha1_finish_ctx
 #define sha1_init_ctx            _crypt_sha1_init_ctx
 #define sha1_process_bytes       _crypt_sha1_process_bytes
 #endif
 
-#if INCLUDE_sha512
+#if INCLUDE_sha512crypt
 #define libcperciva_SHA512_Init   _crypt_SHA512_Init
 #define libcperciva_SHA512_Update _crypt_SHA512_Update
 #define libcperciva_SHA512_Final  _crypt_SHA512_Final
 #define libcperciva_SHA512_Buf    _crypt_SHA512_Buf
 #endif
 
-#if INCLUDE_md5 || INCLUDE_sha256 || INCLUDE_sha512
+#if INCLUDE_md5crypt || INCLUDE_sha256crypt || INCLUDE_sha512crypt
 #define gensalt_sha_rn           _crypt_gensalt_sha_rn
 #endif
 
-#if INCLUDE_yescrypt
+#if INCLUDE_yescrypt || INCLUDE_scrypt || INCLUDE_gost_yescrypt
 #define PBKDF2_SHA256            _crypt_PBKDF2_SHA256
 #define yescrypt_encode_params_r _crypt_yescrypt_encode_params_r
 #define yescrypt_free_local      _crypt_yescrypt_free_local
 #define yescrypt_init_local      _crypt_yescrypt_init_local
 #define yescrypt_kdf             _crypt_yescrypt_kdf
 #define yescrypt_r               _crypt_yescrypt_r
-#endif
+#define yescrypt_decode64        _crypt_yescrypt_decode64
+#define yescrypt_encode64        _crypt_yescrypt_encode64
 
-#if INCLUDE_yescrypt || INCLUDE_scrypt
 #define libcperciva_HMAC_SHA256_Init _crypt_HMAC_SHA256_Init
 #define libcperciva_HMAC_SHA256_Update _crypt_HMAC_SHA256_Update
 #define libcperciva_HMAC_SHA256_Final _crypt_HMAC_SHA256_Final
 #define libcperciva_HMAC_SHA256_Buf _crypt_HMAC_SHA256_Buf
 #endif
 
-#if INCLUDE_sha256 || INCLUDE_scrypt || INCLUDE_yescrypt
+#if INCLUDE_sha256crypt || INCLUDE_scrypt || INCLUDE_yescrypt || \
+    INCLUDE_gost_yescrypt
 #define libcperciva_SHA256_Init  _crypt_SHA256_Init
 #define libcperciva_SHA256_Update _crypt_SHA256_Update
 #define libcperciva_SHA256_Final _crypt_SHA256_Final
 #define libcperciva_SHA256_Buf   _crypt_SHA256_Buf
 #endif
+
+#if INCLUDE_gost_yescrypt
+#define GOST34112012Init       _crypt_GOST34112012_Init
+#define GOST34112012Update     _crypt_GOST34112012_Update
+#define GOST34112012Final      _crypt_GOST34112012_Final
+#define GOST34112012Cleanup    _crypt_GOST34112012_Cleanup
+#define gost_hash256           _crypt_gost_hash256
+#define gost_hmac256           _crypt_gost_hmac256
+
+/* Those are not present, if gost-yescrypt is selected,
+   but yescrypt is not. */
+#if !INCLUDE_yescrypt
+#define gensalt_yescrypt_rn _crypt_gensalt_yescrypt_rn
+extern void gensalt_yescrypt_rn
+  (unsigned long, const uint8_t *, size_t, uint8_t *, size_t);
+#endif
+#endif
+
+/* Those are not present, if des-big is selected, but des is not. */
+#if INCLUDE_bigcrypt && !INCLUDE_descrypt
+#define gensalt_descrypt_rn _crypt_gensalt_descrypt_rn
+extern void gensalt_descrypt_rn
+  (unsigned long, const uint8_t *, size_t, uint8_t *, size_t);
+#endif
+
+/* Those are not present, if scrypt is selected, but yescrypt is not. */
+#if INCLUDE_scrypt && !INCLUDE_yescrypt
+#define crypt_yescrypt_rn _crypt_crypt_yescrypt_rn
+extern void crypt_yescrypt_rn (const char *, size_t, const char *,
+                size_t, uint8_t *, size_t, void *, size_t);
+#endif
+
+/* Utility functions */
+bool get_random_bytes (void *buf, size_t buflen);
+
+extern void gensalt_sha_rn (char tag, size_t maxsalt, unsigned long defcount,
+                            unsigned long mincount, unsigned long maxcount,
+                            unsigned long count,
+                            const uint8_t *rbytes, size_t nrbytes,
+                            uint8_t *output, size_t output_size);
+
+/* Calculate the size of a base64 encoding of N bytes:
+   6 bits per output byte, rounded up.  */
+#define BASE64_LEN(bytes) ((((bytes) * 8) + 5) / 6)
+
+/* The "scratch" area passed to each of the individual hash functions is
+   this big.  */
+#define ALG_SPECIFIC_SIZE 8192
 
 #include "crypt.h"
 

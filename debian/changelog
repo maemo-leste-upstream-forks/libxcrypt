@@ -1,3 +1,9 @@
+libxcrypt (1:4.3.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Marco d'Itri <md@linux.it>  Sat, 10 Nov 2018 21:49:28 +0100
+
 libxcrypt (1:4.2.3-1) unstable; urgency=medium
 
   * New upstream release.

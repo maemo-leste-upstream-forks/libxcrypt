@@ -135,8 +135,7 @@ ifdef BUILD_DEB1
 	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt.3.gz
 	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt_r.3.gz
 
-	sh debian/maintscriptsgen libcrypt1 '/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.1'
-	sh debian/maintscriptsgen libcrypt1-dev '/usr/include/crypt.h /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so /usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
+	sh debian/maintscriptsgen libcrypt1-dev '/usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
 endif
 
 ifdef BUILD_DEB2

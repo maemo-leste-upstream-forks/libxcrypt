@@ -25,20 +25,6 @@ Description: libcrypt shared library
  It provides the traditional Unix 'crypt' and 'crypt_r' interfaces,
  as well as a set of extended interfaces like 'crypt_gensalt'.
 
-Package: libcrypt2
-Section: libs
-Priority: optional
-Architecture: any
-Multi-Arch: same
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: libcrypt shared library
- libxcrypt is a modern library for one-way hashing of passwords.
- It supports DES, MD5, NTHASH, SUNMD5, SHA-2-256, SHA-2-512, and
- bcrypt-based password hashes
- It provides the traditional Unix 'crypt' and 'crypt_r' interfaces,
- as well as a set of extended interfaces like 'crypt_gensalt'.
-
 Package: libcrypt1-dev
 Section: libdevel
 Priority: optional
@@ -48,17 +34,6 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, libcrypt1 (= ${binary:Version})
 Conflicts: libcrypt2-dev
 Breaks: libc6-dev (<< 2.29)
 Replaces: libc6-dev (<< 2.29)
-Description: libcrypt development files
- This package contains the files needed for developing applications that
- use libcrypt.
-
-Package: libcrypt2-dev
-Section: libdevel
-Priority: optional
-Architecture: any
-Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}, libcrypt2 (= ${binary:Version})
-Conflicts: libcrypt1-dev
 Description: libcrypt development files
  This package contains the files needed for developing applications that
  use libcrypt.

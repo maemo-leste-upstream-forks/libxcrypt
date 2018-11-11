@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
 SHELL+= -e
 
-#BUILD_DEB1 := 1
-BUILD_DEB2 := 1
-#BUILD_UDEB := 1
+BUILD_DEB1 := 1
+#BUILD_DEB2 := 1
+BUILD_UDEB := 1
 
 -include debian/rules.local.mk
 
@@ -169,8 +169,12 @@ endif
 	dh_strip
 	dh_compress
 	dh_fixperms
+ifdef BUILD_DEB1
 	dh_makeshlibs -plibcrypt1 --add-udeb=libcrypt1-udeb -- -c4
+endif
+ifdef BUILD_DEB2
 	dh_makeshlibs -plibcrypt2 -- -c4
+endif
 	dh_shlibdeps -- --warnings=7
 	dh_installdeb
 	dh_gencontrol

@@ -35,6 +35,13 @@ noinst_HEADERS = \
 	alg-yescrypt-sysendian.h byteorder.h crypt-obsolete.h \
 	crypt-port.h test-des-cases.h
 
+if ENABLE_XCRYPT_COMPAT_FILES
+include_HEADERS = xcrypt.h
+else
+noinst_HEADERS += xcrypt.h
+endif
+
+
 noinst_PROGRAMS = gen-des-tables
 
 lib_LTLIBRARIES = libcrypt.la
@@ -51,6 +58,7 @@ libcrypt_la_SOURCES = \
 EXTRA_DIST += alg-yescrypt-platform.c
 
 pkgconfig_DATA = libxcrypt.pc
+
 # Install libcrypt.pc symlink to libxcrypt.pc file.
 phony_targets = \
 	install-data-hook-pkgconfig uninstall-hook-pkgconfig
@@ -128,6 +136,40 @@ crypt-hashes.h: hashes.lst gen-hashes.awk Makefile
 	  $(srcdir)/hashes.lst > crypt-hashes.h.T
 	$(AM_V_at)mv -f crypt-hashes.h.T crypt-hashes.h
 
+install_exec_hook_targets =
+
+if ENABLE_XCRYPT_COMPAT_FILES
+if ENABLE_STATIC
+# Install libxcrypt.a symlink to libcrypt.a file.
+phony_targets += \
+	install-exec-hook-xcrypt-static uninstall-hook-xcrypt-static
+install_exec_hook_targets += \
+	install-exec-hook-xcrypt-static
+uninstall_hook_targets += \
+	uninstall-hook-xcrypt-static
+install-exec-hook-xcrypt-static:
+	cd $(DESTDIR)$(libdir) && \
+		$(LN_S) libcrypt.a libxcrypt.a
+uninstall-hook-xcrypt-static:
+	-rm -f $(DESTDIR)$(libdir)/libxcrypt.a
+endif
+
+if ENABLE_SHARED
+# Install libxcrypt.so symlink to libcrypt.so file.
+phony_targets += \
+	install-exec-hook-xcrypt-shared uninstall-hook-xcrypt-shared
+install_exec_hook_targets += \
+	install-exec-hook-xcrypt-shared
+uninstall_hook_targets += \
+	uninstall-hook-xcrypt-shared
+install-exec-hook-xcrypt-shared:
+	cd $(DESTDIR)$(libdir) && \
+		$(LN_S) libcrypt.so libxcrypt.so
+uninstall-hook-xcrypt-shared:
+	-rm -f $(DESTDIR)$(libdir)/libxcrypt.so
+endif
+endif
+
 if ENABLE_COMPAT_SUSE
 # When we are being binary compatible, also install symbolic links to
 # mimic SUSE's libowcrypt; any program that uses -lowcrypt in its
@@ -145,7 +187,8 @@ if ENABLE_OBSOLETE_API
 if ENABLE_STATIC
 phony_targets += \
 	install-exec-hook-libstatic uninstall-hook-libstatic
-install-exec-hook: install-exec-hook-libstatic
+install_exec_hook_targets += \
+	install-exec-hook-libstatic
 uninstall_hook_targets += \
 	uninstall-hook-libstatic
 install-exec-hook-libstatic:
@@ -157,7 +200,8 @@ endif
 if ENABLE_SHARED
 phony_targets += \
 	install-exec-hook-libshared uninstall-hook-libshared
-install-exec-hook: install-exec-hook-libshared
+install_exec_hook_targets += \
+	install-exec-hook-libshared
 uninstall_hook_targets += \
 	uninstall-hook-libshared
 install-exec-hook-libshared:
@@ -180,6 +224,7 @@ check_PROGRAMS = \
 	test-crypt-pbkdf1-sha1 test-crypt-scrypt test-crypt-sha256 \
 	test-crypt-sha512 test-crypt-sunmd5 test-crypt-yescrypt \
 	test-byteorder test-badsalt test-badsetting test-gensalt \
+	test-gensalt-extradata \
 	test-crypt-badargs test-short-outbuf test-compile-strong-alias \
         test-getrandom-interface test-getrandom-fallbacks
 
@@ -225,6 +270,7 @@ test_crypt_yescrypt_LDADD = crypt-common.lo libcrypt.la
 test_badsalt_LDADD = crypt-common.lo libcrypt.la
 test_badsetting_LDADD = crypt-common.lo libcrypt.la
 test_gensalt_LDADD = crypt-common.lo libcrypt.la
+test_gensalt_extradata_LDADD = crypt-common.lo libcrypt.la
 test_checksalt_LDADD = crypt-common.lo libcrypt.la
 test_des_obsolete_LDADD = crypt-common.lo libcrypt.la
 test_des_obsolete_r_LDADD = crypt-common.lo libcrypt.la
@@ -265,4 +311,5 @@ include $(builddir)/Makefile.deps
 
 # Add additional targets
 .PHONY: $(phony_targets)
+install-exec-hook: $(install_exec_hook_targets)
 uninstall-hook: $(uninstall_hook_targets)

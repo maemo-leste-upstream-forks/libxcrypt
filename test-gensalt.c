@@ -211,15 +211,6 @@ static const char *const bcrypt_a_expected_output[] =
   "$2a$05$mAyzaIeJu41dWUkxEbn8hO"
 };
 #endif
-#if INCLUDE_bcrypt_x
-static const char *const bcrypt_x_expected_output[] =
-{
-  "$2x$05$UBVLHeMpJ/QQCv3XqJx8zO",
-  "$2x$05$kxUgPcrmlm9XoOjvxCyfP.",
-  "$2x$05$HPNDjKMRFdR7zC87CMSmA.",
-  "$2x$05$mAyzaIeJu41dWUkxEbn8hO"
-};
-#endif
 #if INCLUDE_bcrypt_y
 static const char *const bcrypt_y_expected_output[] =
 {
@@ -379,9 +370,6 @@ static const struct testcase testcases[] =
   // rounds.
 #if INCLUDE_bcrypt_a
   { "$2a$",  bcrypt_a_expected_output, 29,  0, 0 },
-#endif
-#if INCLUDE_bcrypt_x
-  { "$2x$",  bcrypt_x_expected_output, 29,  0, 0 },
 #endif
 #if INCLUDE_bcrypt_y
   { "$2y$",  bcrypt_y_expected_output, 29,  0, 0 },
@@ -554,38 +542,6 @@ main (void)
         status = 1;
       }
     free (setting);
-  }
-#endif
-
-#if INCLUDE_bcrypt_a
-  /* FIXME: This test is a little too specific.  It used to be in
-     test-bcrypt.c and I'm not sure what it's meant to be testing.  */
-  {
-    char *setting1, *setting2;
-    const char *which = "$2a$05$CCCCCCCCCCCCCCCCCCCCC.E5YPO9kmyuRGyh0XouQYb4YMJKvyOeW";
-    setting1 = crypt_gensalt (which, 12, "CCCCCCCCCCCCCCCCCCCCC", 21);
-    if (!setting1 || strncmp (setting1, "$2a$12$", 7))
-      {
-        printf ("FAILED (crypt_gensalt: wrong prefix) s1=%s\n", setting1);
-        status = 1;
-      }
-
-    setting2 = crypt_gensalt_ra (setting1, 12, "CCCCCCCCCCCCCCCCCCCCC", 21);
-    if (strcmp (setting1, setting2))
-      {
-        printf ("FAILED (crypt_gensalt_ra/1: s1=%s s2=%s)\n", setting1, setting2);
-        status = 1;
-      }
-
-    setting1 = crypt_gensalt_ra (setting2, 12, "DCCCCCCCCCCCCCCCCCCCC", 21);
-    if (!strcmp (setting1, setting2))
-      {
-        printf ("FAILED (crypt_gensalt_ra/2: s1=%s s2=%s)\n", setting1, setting2);
-        status = 1;
-      }
-
-    free (setting1);
-    free (setting2);
   }
 #endif
   return status;

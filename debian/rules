@@ -17,7 +17,8 @@ D2  := $(CURDIR)/debian/libcrypt2
 DD2 := $(CURDIR)/debian/libcrypt2-dev
 DU  := $(CURDIR)/debian/libcrypt1-udeb
 
-CONFFLAGS = --disable-werror --enable-obsolete-api=glibc --prefix=/usr
+CONFFLAGS = --disable-werror --prefix=/usr \
+  --disable-xcrypt-compat-files --enable-obsolete-api=glibc
 CONFFLAGS_deb  = $(CONFFLAGS) \
   $(shell DEB_BUILD_MAINT_OPTIONS="hardening=+bindnow" \
     dpkg-buildflags --export=configure || true) \

@@ -9,7 +9,9 @@ AUTOMAKE_OPTIONS = \
 
 ACLOCAL_AMFLAGS = -I m4
 
-AM_CFLAGS = $(WARN_CFLAGS)
+AM_CFLAGS = $(WARN_CFLAGS) $(OPTI_FLAGS)
+
+AM_LDFLAGS = $(RELRO_FLAG) $(BINDNOW_FLAG)
 
 @VALGRIND_CHECK_RULES@
 
@@ -86,7 +88,7 @@ if HAVE_VSCRIPT
 libcrypt_la_LDFLAGS += $(VSCRIPT_LDFLAGS),$(builddir)/libcrypt.map
 endif
 
-libcrypt_la_LDFLAGS += $(UNDEF_FLAG) $(TEXT_RELOC_FLAG)
+libcrypt_la_LDFLAGS += $(UNDEF_FLAG) $(TEXT_RELOC_FLAG) $(AM_LDFLAGS)
 
 libcrypt_la_CPPFLAGS = $(AM_CPPFLAGS) -DIN_LIBCRYPT
 
@@ -226,7 +228,7 @@ check_PROGRAMS = \
 	test-crypt-pbkdf1-sha1 test-crypt-scrypt test-crypt-sha256 \
 	test-crypt-sha512 test-crypt-sunmd5 test-crypt-yescrypt \
 	test-byteorder test-badsalt test-badsetting test-gensalt \
-	test-gensalt-extradata test-preferred-method \
+	test-gensalt-extradata test-gensalt-nthash test-preferred-method \
 	test-crypt-badargs test-short-outbuf test-compile-strong-alias \
         test-getrandom-interface test-getrandom-fallbacks
 
@@ -282,6 +284,7 @@ test_crypt_yescrypt_LDADD = $(COMMON_TEST_OBJECTS)
 test_badsalt_LDADD = $(COMMON_TEST_OBJECTS)
 test_badsetting_LDADD = $(COMMON_TEST_OBJECTS)
 test_gensalt_LDADD = $(COMMON_TEST_OBJECTS)
+test_gensalt_nthash_LDADD = $(COMMON_TEST_OBJECTS)
 test_gensalt_extradata_LDADD = $(COMMON_TEST_OBJECTS)
 test_checksalt_LDADD = $(COMMON_TEST_OBJECTS)
 test_des_obsolete_LDADD = $(COMMON_TEST_OBJECTS)
@@ -345,7 +348,8 @@ test_getrandom_fallbacks_LDADD = \
 if HAVE_LD_WRAP
 test_getrandom_fallbacks_LDFLAGS = \
   -Wl,--wrap,getentropy -Wl,--wrap,getrandom -Wl,--wrap,syscall \
-  -Wl,--wrap,open -Wl,--wrap,open64 -Wl,--wrap,read -Wl,--wrap,close
+  -Wl,--wrap,open -Wl,--wrap,open64 -Wl,--wrap,read -Wl,--wrap,close \
+  $(AM_LDFLAGS)
 endif
 
 # Every object file depends on crypt-symbol-vers.h and crypt-hashes.h,

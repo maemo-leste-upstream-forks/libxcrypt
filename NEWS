@@ -3,6 +3,17 @@ libxcrypt NEWS -- history of user-visible changes.
 Please send bug reports, questions and suggestions to
 <https://github.com/besser82/libxcrypt/issues>.
 
+Version 4.4.1
+* Change the output of the gensalt function for the NT hashing method
+  ($3$) to output just its prefix ($3$) instead of a fake salt.
+  The output buffer for the returned string must be at least 4 bytes
+  long.
+* Decrase the minimum required amount of random bytes for the NT
+  hashing method to 1 byte, which is actually not used.
+* The default linker flags now generate binaries with full read-only
+  relocations (including full read-only re-mapping of the GOT), if
+  supported by the linker and the system's native binary format.
+
 Version 4.4.0
 * Implement the crypt_preferred_method function.
   This function can be used as a convenience function to get the prefix

@@ -37,7 +37,6 @@
 #include "alg-md4.h"
 
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <netinet/in.h>
 
@@ -49,9 +48,9 @@
 
 void
 crypt_nt_rn (const char *phrase, size_t ARG_UNUSED (phr_size),
-                 const char *setting, size_t ARG_UNUSED (set_size),
-                 uint8_t *output, size_t out_size,
-                 void *scratch, size_t scr_size)
+             const char *setting, size_t ARG_UNUSED (set_size),
+             uint8_t *output, size_t out_size,
+             void *scratch, size_t scr_size)
 {
   size_t unipwLen;
   int i;
@@ -86,7 +85,7 @@ crypt_nt_rn (const char *phrase, size_t ARG_UNUSED (phr_size),
   MD4_Update (ctx, unipw, unipwLen*sizeof(uint16_t));
   MD4_Final (hash, ctx);
 
-  output = (uint8_t *)stpcpy ((char *)output, magic);
+  output += XCRYPT_STRCPY_OR_ABORT (output, out_size, magic);
   *output++ = '$';
   for (i = 0; i < 16; i++)
     {
@@ -96,56 +95,31 @@ crypt_nt_rn (const char *phrase, size_t ARG_UNUSED (phr_size),
   *output = '\0';
 }
 
-/* This function does not return any valid salt,
-   since the NTHASH crypt function simply ignores
-   any setting passed to it.  Anyways, the string
-   returned in OUTPUT will start with the correct
-   magic string '$3$', so it can be used as
-   SETTING for the crypt function.  */
+/* This function simply returns the magic string '$3$',
+   so it can be used as SETTING for the crypt function.  */
 void
 gensalt_nt_rn (unsigned long count,
-                   const uint8_t *rbytes,
-                   size_t nrbytes,
-                   uint8_t *output,
-                   size_t o_size)
+               ARG_UNUSED(const uint8_t *rbytes),
+               ARG_UNUSED(size_t nrbytes),
+               uint8_t *output,
+               size_t o_size)
 {
-  static const char *salt = "$3$__not_used__";
-  MD4_CTX ctx;
-  unsigned char hashbuf[16];
-  char hashstr[14 + 1];
-  unsigned long i;
+  const char *prefix = "$3$";
 
-  /* Minimal O_SIZE to store the fake salt.
-     At least 1 byte of RBYTES is needed
-     to calculate the MD4 hash used in the
-     fake salt.  */
-  if ((o_size < 30) || (nrbytes < 1))
+  /* Minimal O_SIZE to store the prefix.  */
+  if (o_size < strlen (prefix) + 1)
     {
       errno = ERANGE;
       return;
     }
+
   if (count != 0)
     {
       errno = EINVAL;
       return;
     }
 
-  MD4_Init (&ctx);
-  for (i = 0; i < 20; i++)
-    {
-      MD4_Update (&ctx, salt, (i % 15) + 1);
-      MD4_Update (&ctx, rbytes, nrbytes);
-      MD4_Update (&ctx, salt, 15);
-      MD4_Update (&ctx, salt, 15 - (i % 15));
-    }
-  MD4_Final (hashbuf, &ctx);
-
-  for (i = 0; i < 7; i++)
-    sprintf (&(hashstr[i * 2]), "%02x", hashbuf[i]);
-  hashstr[14] = '\0';
-
-  XCRYPT_STRCPY_OR_ABORT (output, o_size, salt);
-  XCRYPT_STRCPY_OR_ABORT (output + 15, o_size - 15, hashstr);
+  XCRYPT_STRCPY_OR_ABORT (output, o_size, prefix);
 }
 
 #endif

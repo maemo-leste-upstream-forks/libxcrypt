@@ -64,15 +64,6 @@ static const char *const md5_expected_output[] =
   "$1$UqGBkVu0"
 };
 #endif
-#if INCLUDE_nt
-static const char *const nthash_expected_output[] =
-{
-  "$3$__not_used__c809a450df09a3",
-  "$3$__not_used__30d0d6f834c0c3",
-  "$3$__not_used__0eeeebb83d6fe4",
-  "$3$__not_used__1c690d6a9ef88c"
-};
-#endif
 #if INCLUDE_sunmd5
 static const char *const sunmd5_expected_output[] =
 {
@@ -328,10 +319,6 @@ static const struct testcase testcases[] =
 #if INCLUDE_md5crypt
   { "$1$",   md5_expected_output,      11,  0, 0 },
   // MD5/BSD doesn't have variable round count.
-#endif
-#if INCLUDE_nt
-  { "$3$",   nthash_expected_output,   29,  0, 0 },
-  // NTHASH doesn't have variable round count.
 #endif
 #if INCLUDE_sunmd5
   { "$md5",  sunmd5_expected_output,   27,  0, 0 },

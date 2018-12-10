@@ -52,7 +52,7 @@ source tree.  For specific licensing terms consult the files themselves.
 
  * Copyright Björn Esser; 0-clause BSD:
    crypt-common.c, test-checksalt.c, test-compile-strong-alias.c,
-   test-short-outbuf.c
+   test-gensalt-nthash.c, test-short-outbuf.c
 
  * Copyright Michael Bretterklieber, Björn Esser et al.; 2-clause BSD:
    crypt-nthash.c
@@ -87,6 +87,15 @@ source tree.  For specific licensing terms consult the files themselves.
 
  * Copyright Kevin Cernekee; BSD alike:
    m4/ax_check_vscript.m4
+
+ * Copyright Maarten Bosmans; BSD alike:
+   m4/ax_append_compile_flags.m4
+
+ * Copyright Guido U. Draheim, Maarten Bosmans; BSD alike:
+   m4/ax_append_flag.m4, m4/ax_check_compile_flag.m4
+
+ * Copyright Mike Frysinger; BSD alike:
+   m4/ax_require_defined.m4
 
  * Copyright Scott James Remnant, Dan Nicholson;
    GPL (v2 or later), with Autoconf exception:

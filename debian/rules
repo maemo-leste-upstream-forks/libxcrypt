@@ -165,7 +165,7 @@ endif
 
 	cat debian/copyright.in LICENSING > debian/copyright
 	dh_installdocs NEWS README.md TODO
-	dh_installchangelogs
+	dh_installchangelogs -XChangeLog
 	dh_link
 	dh_strip
 	dh_compress

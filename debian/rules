@@ -1,11 +1,21 @@
 #!/usr/bin/make -f
 SHELL+= -e
 
-BUILD_DEB1 := 1
-#BUILD_DEB2 := 1
-BUILD_UDEB := 1
+DOPACKAGES := $(shell dh_listpackages)
+BUILD_TARGETS :=
 
--include debian/rules.local.mk
+ifneq ($(filter libcrypt1,$(DOPACKAGES)),)
+BUILD_DEB1 := 1
+BUILD_TARGETS += .stamp-build-deb1
+endif
+ifneq ($(filter libcrypt2,$(DOPACKAGES)),)
+BUILD_DEB2 := 1
+BUILD_TARGETS += .stamp-build-deb2
+endif
+ifneq ($(filter libcrypt1-udeb,$(DOPACKAGES)),)
+BUILD_UDEB := 1
+BUILD_TARGETS += .stamp-build-udeb
+endif
 
 ifeq ($(filter noudeb, $(DEB_BUILD_PROFILES)), noudeb)
 BUILD_UDEB :=
@@ -38,31 +48,6 @@ ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
 else
   CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
 endif
-
-##############################################################################
-BUILD_TARGETS :=
-NO_PACKAGES :=
-
-ifdef BUILD_DEB1
-  BUILD_TARGETS += .stamp-build-deb1
-else
-  NO_PACKAGES += --no-package=libcrypt1 --no-package=libcrypt1-dev
-endif
-
-ifdef BUILD_DEB2
-  BUILD_TARGETS += .stamp-build-deb2
-else
-  NO_PACKAGES += --no-package=libcrypt2 --no-package=libcrypt2-dev
-endif
-
-ifdef BUILD_UDEB
-  BUILD_TARGETS += .stamp-build-udeb
-else
-  NO_PACKAGES += --no-package=libcrypt1-udeb
-endif
-
-DH_OPTIONS += $(NO_PACKAGES)
-export DH_OPTIONS
 
 ##############################################################################
 clean:

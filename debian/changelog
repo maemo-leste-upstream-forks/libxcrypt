@@ -1,3 +1,11 @@
+libxcrypt (1:4.4.3-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Use build profiles to control which packages will be built.
+  * Stop building the udeb for the time being.
+
+ -- Marco d'Itri <md@linux.it>  Sat, 26 Jan 2019 04:25:24 +0100
+
 libxcrypt (1:4.4.2-1) experimental; urgency=medium
 
   * New upstream release.

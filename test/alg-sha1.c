@@ -27,7 +27,7 @@ const char *test_results[3] =
 };
 
 
-static inline void
+static void
 bin_to_hex (uint8_t *digest, char *output)
 {
   for (uint8_t i = 0; i < 20; ++i)
@@ -68,6 +68,23 @@ main (void)
   sha1_init_ctx (&ctx);
   for (k = 0; k < 1000000; k++)
     sha1_process_bytes ((const uint8_t*)"a", &ctx, 1);
+  sha1_finish_ctx (&ctx, digest);
+  bin_to_hex(digest, output);
+  if (strcmp(output, test_results[2]))
+    {
+      fprintf(stdout, "FAIL\n");
+      fprintf(stderr,"* hash of \"%s\" incorrect:\n", test_data[2]);
+      fprintf(stderr,"\t%s returned\n", output);
+      fprintf(stderr,"\t%s is correct\n", test_results[2]);
+      retval = 1;
+    }
+
+  /* The same test as above, but with 1000 blocks of 1000 bytes.  */
+  char buf[1000];
+  memset (buf, 'a', sizeof (buf));
+  sha1_init_ctx (&ctx);
+  for (k = 0; k < 1000; ++k)
+    sha1_process_bytes ((const uint8_t*)buf, &ctx, sizeof (buf));
   sha1_finish_ctx (&ctx, digest);
   bin_to_hex(digest, output);
   if (strcmp(output, test_results[2]))

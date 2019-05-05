@@ -1,3 +1,9 @@
+libxcrypt (1:4.4.6-1) experimental; urgency=medium
+
+  * New upstream release.
+
+ -- Marco d'Itri <md@linux.it>  Mon, 06 May 2019 00:17:33 +0200
+
 libxcrypt (1:4.4.4-1) experimental; urgency=medium
 
   * New upstream release.

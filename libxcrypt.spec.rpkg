@@ -7,7 +7,7 @@
 
 
 # Build the compat package?
-%if !(0%{?fedora} >= 999 || 0%{?rhel} >= 99 || %{without new_api})
+%if !(0%{?fedora} >= 999 || 0%{?rhel} >= 99) && %{with new_api}
 %bcond_without compat_pkg
 %else
 %bcond_with    compat_pkg
@@ -34,6 +34,8 @@
 %else
 %bcond_without memcheck
 %endif
+%else
+%bcond_with    memcheck
 %endif
 
 
@@ -147,7 +149,7 @@ fi                                                             \
 
 
 Name:           {{{ git_dir_name }}}
-Version:        {{{ git_dir_version lead=4.4 follow=4}}}
+Version:        {{{ git_dir_version lead=4.4 follow=6}}}
 Release:        1%{?dist}
 Summary:        Extended crypt library for descrypt, md5crypt, bcrypt, and others
 
@@ -195,7 +197,7 @@ Obsoletes:      %{name}-compat         < %{version}-%{release}
 # We need a version of glibc, that doesn't build libcrypt anymore.
 Requires:       glibc%{?_isa}         >= %{glibc_minver}
 
-%if 0%{?fedora}
+%if 0%{?fedora} >= 30
 Recommends:     whois-mkpasswd
 %endif
 

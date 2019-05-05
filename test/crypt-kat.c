@@ -152,7 +152,7 @@ report_result (const char *tag, const char *hash, int errnm,
         printf (", errno not set");
 
       /* Should the API used have generated a NULL or a failure token?  */
-       if (hash == 0 && expect_failure_tokens)
+      if (hash == 0 && expect_failure_tokens)
         printf (", failure token not generated");
       if (hash != 0 && !expect_failure_tokens)
         printf (", failure token wrongly generated");
@@ -200,20 +200,28 @@ static void *
 calc_hashes_crypt_r_rn (ARG_UNUSED (void *unused))
 {
   char *hash;
+  union
+  {
+    char pass[CRYPT_MAX_PASSPHRASE_SIZE + 1];
+    int aligned;
+  } u;
   size_t i;
   struct crypt_data data;
   int status = 0;
 
   memset (&data, 0, sizeof data);
+  memset (u.pass, 0, CRYPT_MAX_PASSPHRASE_SIZE + 1);
   for (i = 0; i < ntests; i++)
     {
+      strncpy(u.pass + 1, tests[i].input, CRYPT_MAX_PASSPHRASE_SIZE);
+      printf("[%d]: %s %s\n", strlen(tests[i].input), tests[i].input, tests[i].salt);
       errno = 0;
-      hash = crypt_r (tests[i].input, tests[i].salt, &data);
+      hash = crypt_r (u.pass + 1, tests[i].salt, &data);
       status |= report_result ("crypt_r", hash, errno, &tests[i],
                                ENABLE_FAILURE_TOKENS);
 
       errno = 0;
-      hash = crypt_rn (tests[i].input, tests[i].salt, &data, (int)sizeof data);
+      hash = crypt_rn (u.pass + 1, tests[i].salt, &data, (int)sizeof data);
       status |= report_result ("crypt_rn", hash, errno, &tests[i], false);
     }
 
@@ -263,32 +271,40 @@ main (void)
     int err;
     void *xstatus;
     err = pthread_create (&t1, 0, calc_hashes_crypt_r_rn, 0);
-    if (err) {
-      fprintf (stderr, "pthread_create (crypt_r): %s\n", strerror (err));
-      return 1;
-    }
+    if (err)
+      {
+        fprintf (stderr, "pthread_create (crypt_r): %s\n", strerror (err));
+        return 1;
+      }
     err = pthread_create (&t2, 0, calc_hashes_crypt_ra_recrypt, 0);
-    if (err) {
-      fprintf (stderr, "pthread_create (crypt_ra): %s\n", strerror (err));
-      return 1;
-    }
+    if (err)
+      {
+        fprintf (stderr, "pthread_create (crypt_ra): %s\n", strerror (err));
+        return 1;
+      }
 
     status |= !!calc_hashes_crypt_fcrypt (0);
 
     err = pthread_join (t1, &xstatus);
-    if (err) {
-      fprintf (stderr, "pthread_join (crypt_r): %s\n", strerror (err));
-      status = 1;
-    } else {
-      status |= !!xstatus;
-    }
+    if (err)
+      {
+        fprintf (stderr, "pthread_join (crypt_r): %s\n", strerror (err));
+        status = 1;
+      }
+    else
+      {
+        status |= !!xstatus;
+      }
     err = pthread_join (t2, &xstatus);
-    if (err) {
-      fprintf (stderr, "pthread_join (crypt_rn): %s\n", strerror (err));
-      status = 1;
-    } else {
-      status |= !!xstatus;
-    }
+    if (err)
+      {
+        fprintf (stderr, "pthread_join (crypt_rn): %s\n", strerror (err));
+        status = 1;
+      }
+    else
+      {
+        status |= !!xstatus;
+      }
   }
 #else
   status |= !!calc_hashes_crypt_fcrypt (results);

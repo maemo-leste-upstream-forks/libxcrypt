@@ -1,3 +1,9 @@
+libxcrypt (1:4.4.6-3) experimental; urgency=medium
+
+  * Re-upload with the orig.tar.xz.
+
+ -- Marco d'Itri <md@linux.it>  Tue, 23 Jul 2019 17:26:10 +0200
+
 libxcrypt (1:4.4.6-2) experimental; urgency=medium
 
   * Remove the build profiles because DAK does not support them.

@@ -1,4 +1,5 @@
 /usr/include/
 /usr/share/man/
 /usr/lib/*/pkgconfig/
-/lib/*/*.a
+/usr/lib/*/*.a
+/usr/lib/*/*.so

@@ -32,11 +32,11 @@ CONFFLAGS = --disable-werror --prefix=/usr \
 CONFFLAGS_deb  = $(CONFFLAGS) \
   $(shell DEB_BUILD_MAINT_OPTIONS="hardening=+bindnow" \
     dpkg-buildflags --export=configure || true) \
-  --libdir=/lib/$(DEB_HOST_MULTIARCH) 
+  --libdir=/usr/lib/$(DEB_HOST_MULTIARCH)
 CONFFLAGS_udeb = $(CONFFLAGS) \
   $(subst -O2,-Os -fomit-frame-pointer,$(shell DEB_BUILD_MAINT_OPTIONS="hardening=-all" \
     dpkg-buildflags --export=configure || true)) \
-  --libdir=/lib
+  --libdir=/usr/lib
 
 ##############################################################################
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
@@ -108,12 +108,10 @@ binary-arch: build
 
 ifdef BUILD_DEB1
 	cd build-deb1/ && \
-	$(MAKE) install DESTDIR=$D pkgconfigdir='/usr$${libdir}/pkgconfig'
+	$(MAKE) install DESTDIR=$D
 
 	dh_movefiles -plibcrypt1-dev --sourcedir=debian/libcrypt1/
-	rm $D/lib/*/*.la $D/lib/*/*.so
-	ln -s ../../../lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.1.1.0 $(DD)/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so
-	mv $(DD)/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a $(DD)/usr/lib/$(DEB_HOST_MULTIARCH)/
+	rm $D/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $D -type d -empty) $$(find $(DD) -type d -empty)
 
@@ -126,12 +124,10 @@ endif
 
 ifdef BUILD_DEB2
 	cd build-deb2/ && \
-	$(MAKE) install DESTDIR=$(D2) pkgconfigdir='/usr$${libdir}/pkgconfig'
+	$(MAKE) install DESTDIR=$(D2)
 
 	dh_movefiles -plibcrypt2-dev --sourcedir=debian/libcrypt2/
-	rm $(D2)/lib/*/*.la $(D2)/lib/*/*.so
-	ln -s ../../../lib/$(DEB_HOST_MULTIARCH)/libcrypt.so.2.0.0 $(DD2)/usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so
-	mv $(DD2)/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a $(DD2)/usr/lib/$(DEB_HOST_MULTIARCH)/
+	rm $(D2)/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $(D2) -type d -empty) $$(find $(DD2) -type d -empty)
 
@@ -145,7 +141,7 @@ endif
 ifdef BUILD_UDEB
 	cd build-udeb/ && \
 	$(MAKE) install-exec DESTDIR=$(DU)
-	rm $(DU)/lib/*.a $(DU)/lib/*.la $(DU)/lib/*.so
+	rm $(DU)/usr/lib/*.a $(DU)/usr/lib/*.la $(DU)/usr/lib/*.so
 endif
 
 	cat debian/copyright.in LICENSING > debian/copyright

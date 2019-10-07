@@ -37,3 +37,13 @@ Replaces: libc6-dev (<< 2.29)
 Description: libcrypt development files
  This package contains the files needed for developing applications that
  use libcrypt.
+
+Package: libcrypt1-udeb
+Package-Type: udeb
+Section: debian-installer
+Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: libcrypt shared library
+ This is a minimal version of libcrypt, only for use in the installation
+ system.

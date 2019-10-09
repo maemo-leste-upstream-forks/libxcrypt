@@ -47,10 +47,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 override_dh_clean:
 	rm -rf build-*
-	dh_clean debian/copyright \
-		debian/libcrypt1.preinst debian/libcrypt1.postrm \
-		debian/libcrypt1-dev.preinst debian/libcrypt1-dev.postrm \
-		debian/libcrypt2-dev.preinst debian/libcrypt2-dev.postrm
+	dh_clean debian/copyright
 
 build-deb1/config.status:
 	dh_auto_configure --builddir=build-deb1 -- $(CONFFLAGS_deb)
@@ -95,8 +92,6 @@ ifdef BUILD_DEB1
 	rm $D/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $D -type d -empty) $$(find $(DD) -type d -empty)
-
-	sh debian/maintscriptsgen libcrypt1-dev '/usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
 endif
 
 ifdef BUILD_DEB2
@@ -107,8 +102,6 @@ ifdef BUILD_DEB2
 	rm $(D2)/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $(D2) -type d -empty) $$(find $(DD2) -type d -empty)
-
-	sh debian/maintscriptsgen libcrypt2-dev '/usr/include/crypt.h /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so /usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
 endif
 
 ifdef BUILD_UDEB

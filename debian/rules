@@ -1,24 +1,24 @@
 #!/usr/bin/make -f
-SHELL+= -e
 
 DOPACKAGES := $(shell dh_listpackages)
 BUILD_TARGETS :=
 
 ifneq ($(filter libcrypt1,$(DOPACKAGES)),)
 BUILD_DEB1 := 1
-BUILD_TARGETS += .stamp-build-deb1
+BUILD_TARGETS += build-deb1/.stamp
 endif
 ifneq ($(filter libcrypt2,$(DOPACKAGES)),)
 BUILD_DEB2 := 1
-BUILD_TARGETS += .stamp-build-deb2
+BUILD_TARGETS += build-deb2/.stamp
 endif
 ifneq ($(filter libcrypt1-udeb,$(DOPACKAGES)),)
 BUILD_UDEB := 1
-BUILD_TARGETS += .stamp-build-udeb
+BUILD_TARGETS += build-udeb/.stamp
 endif
 
 ifeq ($(filter noudeb, $(DEB_BUILD_PROFILES)), noudeb)
 BUILD_UDEB :=
+NO_PACKAGE := --no-package=libcrypt1-udeb
 endif
 
 D   := $(CURDIR)/debian/libcrypt1
@@ -41,71 +41,52 @@ CONFFLAGS_udeb = $(CONFFLAGS) \
 ##############################################################################
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
-DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
-  CONFFLAGS += --build $(DEB_HOST_GNU_TYPE)
-else
-  CONFFLAGS += --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
-endif
-
 ##############################################################################
-clean:
-	rm -rf .stamp-* build-* debian/copyright \
+%:
+	dh $@ $(NO_PACKAGE)
+
+override_dh_clean:
+	rm -rf build-*
+	dh_clean debian/copyright \
 		debian/libcrypt1.preinst debian/libcrypt1.postrm \
 		debian/libcrypt1-dev.preinst debian/libcrypt1-dev.postrm \
 		debian/libcrypt2-dev.preinst debian/libcrypt2-dev.postrm
-	dh_autoreconf_clean
-	dh_clean
 
-configure: configure.ac
-	dh_autoreconf
+build-deb1/config.status:
+	dh_auto_configure --builddir=build-deb1 -- $(CONFFLAGS_deb)
 
-build-deb1/config.status: configure
-	[ -d build-deb1 ] || mkdir build-deb1
-	cd build-deb1/ && \
-	../configure $(CONFFLAGS_deb)
+build-deb2/config.status:
+	dh_auto_configure --builddir=build-deb2 -- $(subst api=glibc,api=no,$(CONFFLAGS_deb))
 
-build-deb2/config.status: configure
-	[ -d build-deb2 ] || mkdir build-deb2
-	cd build-deb2/ && \
-	../configure $(subst api=glibc,api=no,$(CONFFLAGS_deb))
+build-udeb/config.status:
+	dh_auto_configure --builddir=build-udeb -- $(CONFFLAGS_udeb)
 
-build-udeb/config.status: configure
-	[ -d build-udeb ] || mkdir build-udeb
-	cd build-udeb/ && \
-	../configure $(CONFFLAGS_udeb)
+override_dh_auto_configure:
 
-build: $(BUILD_TARGETS)
-
-build-deb1: .stamp-build-deb1
-.stamp-build-deb1: build-deb1/config.status
-	dh_testdir
-	cd build-deb1/ && \
-	$(MAKE) all
+build-deb1/.stamp: build-deb1/config.status
+	dh_auto_build --builddir=build-deb1
 	touch $@
 
-build-deb2: .stamp-build-deb2
-.stamp-build-deb2: build-deb2/config.status
-	dh_testdir
-	cd build-deb2/ && \
-	$(MAKE) all
+build-deb2/.stamp: build-deb2/config.status
+	dh_auto_build --builddir=build-deb2
 	touch $@
 
-build-udeb: .stamp-build-udeb
-.stamp-build-udeb: build-udeb/config.status
-	dh_testdir
-	cd build-udeb/ && \
-	$(MAKE) all
+build-udeb/.stamp: build-udeb/config.status
+	dh_auto_build --builddir=build-udeb
 	touch $@
 
-binary-arch: build
-	dh_testdir
-	dh_testroot
-	dh_prep
+override_dh_auto_build: $(BUILD_TARGETS)
 
-	dh_installdirs
+override_dh_auto_test:
+ifdef BUILD_DEB1
+	dh_auto_test --builddir=build-deb1
+else
+ifdef BUILD_DEB2
+	dh_auto_test --builddir=build-deb2
+endif
+endif
 
+override_dh_auto_install:
 ifdef BUILD_DEB1
 	cd build-deb1/ && \
 	$(MAKE) install DESTDIR=$D
@@ -136,6 +117,7 @@ ifdef BUILD_UDEB
 	rm $(DU)/usr/lib/*.a $(DU)/usr/lib/*.la $(DU)/usr/lib/*.so
 endif
 
+override_dh_installdocs:
 	cat debian/copyright.in LICENSING > debian/copyright
 ifdef BUILD_DEB1
 	dh_installdocs -plibcrypt1-dev --link-doc=libcrypt1
@@ -145,29 +127,18 @@ ifdef BUILD_DEB2
 	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
 	dh_installdocs -plibcrypt2
 endif
+
+override_dh_installchangelogs:
 	dh_installchangelogs -XChangeLog NEWS
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
+
+override_dh_makeshlibs:
 ifdef BUILD_DEB1
 	dh_makeshlibs -plibcrypt1 -- -c4
 endif
 ifdef BUILD_DEB2
 	dh_makeshlibs -plibcrypt2 -- -c4
 endif
+
+override_dh_shlibdeps:
 	dh_shlibdeps -- --warnings=7
-	dh_installdeb
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
 
-binary-indep:
-
-binary:	binary-arch binary-indep
-
-get-orig-source:
-	cd $(dir $(firstword $(MAKEFILE_LIST)))../ && \
-	uscan --rename --force-download --watchfile debian/watch --destdir $(CURDIR)
-
-.PHONY: clean build build-arch build-indep binary binary-arch binary-indep

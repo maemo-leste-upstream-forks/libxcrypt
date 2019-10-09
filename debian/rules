@@ -115,10 +115,6 @@ ifdef BUILD_DEB1
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $D -type d -empty) $$(find $(DD) -type d -empty)
 
-	dh_installdocs -plibcrypt1-dev --link-doc=libcrypt1
-	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt.3.gz
-	ln -s crypt_rn.3.gz $(DD)/usr/share/man/man3/crypt_r.3.gz
-
 	sh debian/maintscriptsgen libcrypt1-dev '/usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
 endif
 
@@ -131,10 +127,6 @@ ifdef BUILD_DEB2
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $(D2) -type d -empty) $$(find $(DD2) -type d -empty)
 
-	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
-	ln -s crypt_rn.3.gz $(DD2)/usr/share/man/man3/crypt.3.gz
-	ln -s crypt_rn.3.gz $(DD2)/usr/share/man/man3/crypt_r.3.gz
-
 	sh debian/maintscriptsgen libcrypt2-dev '/usr/include/crypt.h /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.a /usr/lib/$(DEB_HOST_MULTIARCH)/libcrypt.so /usr/share/man/man3/crypt.3.gz /usr/share/man/man3/crypt_r.3.gz'
 endif
 
@@ -145,8 +137,15 @@ ifdef BUILD_UDEB
 endif
 
 	cat debian/copyright.in LICENSING > debian/copyright
-	dh_installdocs NEWS README.md TODO
-	dh_installchangelogs -XChangeLog
+ifdef BUILD_DEB1
+	dh_installdocs -plibcrypt1-dev --link-doc=libcrypt1
+	dh_installdocs -plibcrypt1
+endif
+ifdef BUILD_DEB2
+	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
+	dh_installdocs -plibcrypt2
+endif
+	dh_installchangelogs -XChangeLog NEWS
 	dh_link
 	dh_strip
 	dh_compress

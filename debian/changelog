@@ -1,3 +1,11 @@
+libxcrypt (1:4.4.10-2) experimental; urgency=medium
+
+  * Update the Breaks/Replaces for libc*. (See #941853.)
+  * Use dh --reload-all-buildenv-variables because the udeb is built
+    with different flags.
+
+ -- Marco d'Itri <md@linux.it>  Sun, 17 Nov 2019 22:33:38 +0100
+
 libxcrypt (1:4.4.10-1) experimental; urgency=medium
 
   * New upstream release.

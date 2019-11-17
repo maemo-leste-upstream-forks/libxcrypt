@@ -43,7 +43,7 @@ DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 
 ##############################################################################
 %:
-	dh $@ $(NO_PACKAGE)
+	dh $@ --reload-all-buildenv-variables $(NO_PACKAGE)
 
 override_dh_clean:
 	rm -rf build-*

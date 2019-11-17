@@ -2,7 +2,7 @@ Source: libxcrypt
 Section: admin
 Priority: optional
 Maintainer: Marco d'Itri <md@linux.it>
-Build-Depends: debhelper-compat (= 12),
+Build-Depends: debhelper-compat (= 12), debhelper (>= 12.7~),
   autoconf, automake, libtool, pkg-config,
 Standards-Version: 4.4.1.1
 Rules-Requires-Root: no

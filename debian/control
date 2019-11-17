@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Marco d'Itri <md@linux.it>
 Build-Depends: debhelper-compat (= 12),
   autoconf, automake, libtool, pkg-config,
-Standards-Version: 4.3.0.1
+Standards-Version: 4.4.1.1
 Rules-Requires-Root: no
 Vcs-Git: https://salsa.debian.org/md/libxcrypt.git
 Vcs-Browser: https://salsa.debian.org/md/libxcrypt

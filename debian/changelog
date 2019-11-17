@@ -1,3 +1,9 @@
+libxcrypt (1:4.4.10-3) experimental; urgency=medium
+
+  * Re-upload with the orig.tar.xz.
+
+ -- Marco d'Itri <md@linux.it>  Sun, 17 Nov 2019 23:15:20 +0100
+
 libxcrypt (1:4.4.10-2) experimental; urgency=medium
 
   * Update the Breaks/Replaces for libc*. (See #941853.)

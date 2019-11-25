@@ -1,3 +1,9 @@
+libxcrypt (1:4.4.10-4) experimental; urgency=medium
+
+  * Added architecture-dependant symbol files.
+
+ -- Marco d'Itri <md@linux.it>  Mon, 25 Nov 2019 02:25:53 +0100
+
 libxcrypt (1:4.4.10-3) experimental; urgency=medium
 
   * Re-upload with the orig.tar.xz.

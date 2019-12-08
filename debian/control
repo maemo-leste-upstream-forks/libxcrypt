@@ -65,3 +65,13 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: libcrypt shared library
  This is a minimal version of libcrypt, only for use in the installation
  system.
+
+Package: libxcrypt-source
+Architecture: all
+Section: devel
+Priority: optional
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: libcrypt shared library: sources
+ This package contains the sources and patches which are needed to
+ build libxcrypt.

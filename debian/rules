@@ -26,6 +26,7 @@ DD  := $(CURDIR)/debian/libcrypt1-dev
 D2  := $(CURDIR)/debian/libcrypt2
 DD2 := $(CURDIR)/debian/libcrypt2-dev
 DU  := $(CURDIR)/debian/libcrypt1-udeb
+DS  := $(CURDIR)/debian/libxcrypt-source
 
 CONFFLAGS = --disable-werror --prefix=/usr \
   --disable-xcrypt-compat-files --enable-obsolete-api=glibc
@@ -40,6 +41,10 @@ CONFFLAGS_udeb = $(CONFFLAGS) \
 
 ##############################################################################
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+UPSTREAM_VERSION := $(shell dpkg-parsechangelog -S Version | sed -e 's/.*://' -e 's/[+-].*//')
+
+SOURCE_DATE_EPOCH ?= $(shell dpkg-parsechangelog -STimestamp)
 
 ##############################################################################
 %:
@@ -110,6 +115,17 @@ ifdef BUILD_UDEB
 	rm $(DU)/usr/lib/*.a $(DU)/usr/lib/*.la $(DU)/usr/lib/*.so
 endif
 
+	mkdir -p $(DS)/usr/src/libxcrypt/
+	find * -print0 | \
+	egrep --null-data --invert-match '^(INSTALL$$|Makefile\.in$$|build-|aclocal\.m4$$|autom4te\.cache(/|$$)|config\.h\.in$$|configure$$|m4/config\.guess$$|m4/config\.sub$$|debian/($$|\.|libcrypt[12](|-dev|-udeb)(/|$$)|libxcrypt-source(/|$$)|autoreconf\.|copyright$$|debhelper-build-stamp$$|files$$|patches(/|$$)|.+\.debhelper\.log$$|.+\.substvars$$))' | \
+	LC_ALL=C sort -z | \
+	tar cf - \
+		--no-recursion --null --files-from=- \
+		--clamp-mtime --mtime "@$(SOURCE_DATE_EPOCH)" \
+		--mode=go=rX,u+rw,a-s \
+		--owner=root --group=root --numeric-owner \
+		| tar xf - -C $(DS)/usr/src/libxcrypt/
+
 override_dh_installdocs:
 	cat debian/copyright.in LICENSING > debian/copyright
 ifdef BUILD_DEB1
@@ -120,6 +136,7 @@ ifdef BUILD_DEB2
 	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
 	dh_installdocs -plibcrypt2
 endif
+	dh_installdocs -plibxcrypt-source
 
 override_dh_installchangelogs:
 	dh_installchangelogs -XChangeLog NEWS

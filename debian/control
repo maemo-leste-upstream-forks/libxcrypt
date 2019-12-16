@@ -61,7 +61,7 @@ Package-Type: udeb
 Section: debian-installer
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${misc:Depends}
 Description: libcrypt shared library
  This is a minimal version of libcrypt, only for use in the installation
  system.

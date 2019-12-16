@@ -1,3 +1,13 @@
+libxcrypt (1:4.4.10-7) unstable; urgency=medium
+
+  * Build a libxcrypt-source package to help bootstrapping the
+    cross-toolchains.
+
+  [ Steve McIntyre ]
+  * Force libcrypt1-udeb to not depend on libc6-udeb. (Closes: #946856)
+
+ -- Marco d'Itri <md@linux.it>  Tue, 17 Dec 2019 00:39:11 +0100
+
 libxcrypt (1:4.4.10-5) unstable; urgency=medium
 
   * Re-upload to unstable.

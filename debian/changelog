@@ -1,3 +1,9 @@
+libxcrypt (1:4.4.10-8) unstable; urgency=medium
+
+  * Rename libcrypt1-dev to libcrypt-dev. (Closes: #946563)
+
+ -- Marco d'Itri <md@linux.it>  Fri, 27 Dec 2019 23:51:08 +0100
+
 libxcrypt (1:4.4.10-7) unstable; urgency=medium
 
   * Build a libxcrypt-source package to help bootstrapping the

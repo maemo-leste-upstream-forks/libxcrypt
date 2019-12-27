@@ -33,13 +33,14 @@ Description: libcrypt shared library
  It provides the traditional Unix 'crypt' and 'crypt_r' interfaces,
  as well as a set of extended interfaces like 'crypt_gensalt'.
 
-Package: libcrypt1-dev
+Package: libcrypt-dev
 Section: libdevel
 Priority: optional
 Architecture: any
 Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}, libcrypt1 (= ${binary:Version})
-Conflicts: libcrypt2-dev
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${LIBPKG} (= ${binary:Version})
+Provides: libcrypt1-dev
+Conflicts: libcrypt1-dev, libcrypt2-dev
 Breaks:
  libc6-dev (<< 2.29-4),
  libc6.1-dev (<< 2.29-4) [alpha ia64],
@@ -47,6 +48,7 @@ Breaks:
  libc0.3-dev (<< 2.29-4) [hurd-i386],
  manpages-dev (<< 5.01-1),
 Replaces:
+ libcrypt1-dev, libcrypt2-dev,
  libc6-dev (<< 2.29-4),
  libc6.1-dev (<< 2.29-4) [alpha ia64],
  libc0.1-dev (<< 2.29-4) [kfreebsd-amd64 kfreebsd-i386],

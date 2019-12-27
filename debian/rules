@@ -5,10 +5,12 @@ BUILD_TARGETS :=
 
 ifneq ($(filter libcrypt1,$(DOPACKAGES)),)
 BUILD_DEB1 := 1
+BUILD_DEV_VER := 1
 BUILD_TARGETS += build-deb1/.stamp
 endif
 ifneq ($(filter libcrypt2,$(DOPACKAGES)),)
 BUILD_DEB2 := 1
+BUILD_DEV_VER := 2
 BUILD_TARGETS += build-deb2/.stamp
 endif
 ifneq ($(filter libcrypt1-udeb,$(DOPACKAGES)),)
@@ -22,9 +24,8 @@ NO_PACKAGE := --no-package=libcrypt1-udeb
 endif
 
 D   := $(CURDIR)/debian/libcrypt1
-DD  := $(CURDIR)/debian/libcrypt1-dev
+DD  := $(CURDIR)/debian/libcrypt-dev
 D2  := $(CURDIR)/debian/libcrypt2
-DD2 := $(CURDIR)/debian/libcrypt2-dev
 DU  := $(CURDIR)/debian/libcrypt1-udeb
 DS  := $(CURDIR)/debian/libxcrypt-source
 
@@ -93,7 +94,11 @@ ifdef BUILD_DEB1
 	cd build-deb1/ && \
 	$(MAKE) install DESTDIR=$D
 
-	dh_movefiles -plibcrypt1-dev --sourcedir=debian/libcrypt1/
+ifeq ($(BUILD_DEV_VER), 1)
+	dh_movefiles -plibcrypt-dev --sourcedir=debian/libcrypt1/
+else
+	cd $D && echo $(shell sed -re 's#^/##' $(CURDIR)/debian/libcrypt-dev.files) | xargs echo rm -rf
+endif
 	rm $D/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $D -type d -empty) $$(find $(DD) -type d -empty)
@@ -103,10 +108,14 @@ ifdef BUILD_DEB2
 	cd build-deb2/ && \
 	$(MAKE) install DESTDIR=$(D2)
 
-	dh_movefiles -plibcrypt2-dev --sourcedir=debian/libcrypt2/
+ifeq ($(BUILD_DEV_VER), 2)
+	dh_movefiles -plibcrypt-dev --sourcedir=debian/libcrypt2/
+else
+	cd $(D2) && echo $(shell sed -re 's#^/##' $(CURDIR)/debian/libcrypt-dev.files) | xargs echo rm -rf
+endif
 	rm $(D2)/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
-		$$(find $(D2) -type d -empty) $$(find $(DD2) -type d -empty)
+		$$(find $(D2) -type d -empty) $$(find $(DD) -type d -empty)
 endif
 
 ifdef BUILD_UDEB
@@ -128,12 +137,11 @@ endif
 
 override_dh_installdocs:
 	cat debian/copyright.in LICENSING > debian/copyright
+	dh_installdocs -plibcrypt-dev --link-doc=libcrypt$(BUILD_DEV_VER)
 ifdef BUILD_DEB1
-	dh_installdocs -plibcrypt1-dev --link-doc=libcrypt1
 	dh_installdocs -plibcrypt1
 endif
 ifdef BUILD_DEB2
-	dh_installdocs -plibcrypt2-dev --link-doc=libcrypt2
 	dh_installdocs -plibcrypt2
 endif
 	dh_installdocs -plibxcrypt-source
@@ -151,4 +159,7 @@ endif
 
 override_dh_shlibdeps:
 	dh_shlibdeps -- --warnings=7
+
+override_dh_gencontrol:
+	dh_gencontrol $@ -- -VLIBPKG=libcrypt$(BUILD_DEV_VER)
 

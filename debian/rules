@@ -57,12 +57,14 @@ override_dh_clean:
 
 build-deb1/config.status:
 	dh_auto_configure --builddir=build-deb1 -- $(CONFFLAGS_deb)
+	sh debian/patch_libtool build-deb1
 
 build-deb2/config.status:
 	dh_auto_configure --builddir=build-deb2 -- $(subst api=glibc,api=no,$(CONFFLAGS_deb))
 
 build-udeb/config.status:
 	dh_auto_configure --builddir=build-udeb -- $(CONFFLAGS_udeb)
+	sh debian/patch_libtool build-udeb
 
 override_dh_auto_configure:
 

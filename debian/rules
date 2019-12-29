@@ -128,7 +128,7 @@ endif
 
 	mkdir -p $(DS)/usr/src/libxcrypt/
 	find * -print0 | \
-	egrep --null-data --invert-match '^(INSTALL$$|Makefile\.in$$|build-|aclocal\.m4$$|autom4te\.cache(/|$$)|config\.h\.in$$|configure$$|m4/config\.guess$$|m4/config\.sub$$|debian/($$|\.|libcrypt[12](|-dev|-udeb)(/|$$)|libxcrypt-source(/|$$)|autoreconf\.|copyright$$|debhelper-build-stamp$$|files$$|patches(/|$$)|.+\.debhelper\.log$$|.+\.substvars$$))' | \
+	egrep --null-data --invert-match '^(INSTALL$$|Makefile\.in$$|build-|aclocal\.m4$$|autom4te\.cache(/|$$)|config\.h\.in$$|configure$$|m4/config\.guess$$|m4/config\.sub$$|debian/($$|\.|libcrypt[12]?(|-dev|-udeb)(/|$$)|libxcrypt-source(/|$$)|autoreconf\.|copyright$$|debhelper-build-stamp$$|files$$|patches(/|$$)|.+\.debhelper\.log$$|.+\.substvars$$))' | \
 	LC_ALL=C sort -z | \
 	tar cf - \
 		--no-recursion --null --files-from=- \

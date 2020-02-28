@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+. build/venv/bin/activate
+
 log_time () {
    local duration="$SECONDS"
    local secs=$((duration % 60)); duration=$((duration / 60))
@@ -96,7 +98,17 @@ fi
 if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
   export CFLAGS="-O2 -g -arch i386 -arch x86_64 --coverage"
   export CXXFLAGS="$CFLAGS"
-  export LDFLAGS="-arch i386 -arch x86_64 -lprofile_rt"
+  export LDFLAGS="-arch i386 -arch x86_64 --coverage"
+  if [[ "$CC" == "gcc" ]]; then
+    GCC_VER="$(brew list --versions gcc | sed 's/^gcc \([0-9]*\)\..*$/\1/')"
+    export CC="gcc-$GCC_VER"
+    export CPP="cpp-$GCC_VER"
+    export CXX="g++-$GCC_VER"
+    export AR="gcc-ar-$GCC_VER"
+    export NM="gcc-nm-$GCC_VER"
+    export RANLIB="gcc-ranlib-$GCC_VER"
+    $CC --version
+  fi
 elif [[ "$CODECOV" == "1" ]]; then
   export CFLAGS="-O0 -g --coverage"
   export CXXFLAGS="$CFLAGS"
@@ -105,7 +117,12 @@ else
   export CPPFLAGS="$(dpkg-buildflags --get CPPFLAGS)"
   export CFLAGS="$(dpkg-buildflags --get CFLAGS) --coverage"
   export CXXFLAGS="$(dpkg-buildflags --get CXXFLAGS) --coverage"
-  export LDFLAGS="$(dpkg-buildflags --get LDFLAGS)"
+  export LDFLAGS="$(dpkg-buildflags --get LDFLAGS) --coverage"
+fi
+
+if [[ "$CC" == "clang" ]]; then
+  export CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
+  export CXXFLAGS="$CXXFLAGS -fprofile-arcs -ftest-coverage"
 fi
 
 MAKE_ARGS=
@@ -116,12 +133,10 @@ if [[ "$SANITIZER" == "1" ]]; then
   export CXXFLAGS="$CXXFLAGS -fsanitize=undefined,address"
 fi
 
-rm -fr build
-mkdir -p build
 pushd build
 log_time preparation
 
-../configure --disable-silent-rules $CONF || \
+$(cd .. && pwd)/configure --disable-silent-rules $CONF || \
   (cat config.log && exit 1)
 log_time configure
 

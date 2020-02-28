@@ -72,7 +72,6 @@ AC_ARG_ENABLE(
         -Wformat-overflow=2 dnl
         -Wformat-signedness dnl
         -Wformat-truncation=1 dnl
-        -Winline dnl
         -Wlogical-op dnl
         -Wmissing-declarations dnl
         -Wmissing-prototypes dnl
@@ -94,6 +93,14 @@ AC_ARG_ENABLE(
     if test x$warnings_are_errors = xtrue; then
         ax_candidate_warnings="$ax_candidate_warnings -Werror"
     fi
+
+    # If we are building for OSX, turn -Wdeprecated-declarations off.
+    # Apple is a little too trigger-happy with deprecations.
+    case "$host_os" in
+      (*darwin*)
+        ax_candidate_warnings="$ax_candidate_warnings -Wno-deprecated-declarations"
+      ;;
+    esac
 
     AX_APPEND_COMPILE_FLAGS(
         [$ax_candidate_warnings], [WARN_CFLAGS],

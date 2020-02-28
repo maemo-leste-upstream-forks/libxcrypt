@@ -1,7 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 m4_include([m4/zw_automodern.m4])
 AC_INIT([xcrypt],
-        [4.4.10],
+        [4.4.15],
         [https://github.com/besser82/libxcrypt/issues],
         [libxcrypt],
         [https://github.com/besser82/libxcrypt])
@@ -69,13 +69,7 @@ AC_CACHE_CHECK([whether the preprocessor ($CPP) supports -dD],
 ])
 AM_CONDITIONAL([HAVE_CPP_dD], [test $ac_cv_prog_cc_dD = yes])
 
-# Checks for libraries.
-AX_PTHREAD
-# Automake+Libtool don't support PTHREAD_CC being used for some but
-# not all programs.
-if test x"$PTHREAD_CC" != x"$CC"; then
-  AC_MSG_ERROR([PTHREAD_CC different from CC is not supported, due to Automake limitations])
-fi
+# Checks for libraries: currently none needed.
 
 # Checks for header files.
 AC_CHECK_HEADERS_ONCE(
@@ -238,8 +232,8 @@ AX_VALGRIND_DFLT([sgcheck], [off])
 # Add a target to run testsuite with valgrind.
 AX_VALGRIND_CHECK()
 
-# Requirements for running test-crypt-kat-gen.py.
-ENABLE_CRYPT_KAT_GEN="no"
+# Requirements for running test/ka-table-gen.py.
+ENABLE_KA_TABLE_GEN="no"
 
 # Construct PYTHON_CANDIDATE_VERSIONS from most recent version to
 # the minimum version required, ending up with a string containing:
@@ -256,23 +250,23 @@ done
 AC_PATH_PROGS([PYTHON], [$PYTHON_CANDIDATE_VERSIONS], [])
 
 if test x"$PYTHON" != "x"; then
-  AX_PROG_PYTHON_VERSION([3.6], [ENABLE_CRYPT_KAT_GEN="yes"],
+  AX_PROG_PYTHON_VERSION([3.6], [ENABLE_KA_TABLE_GEN="yes"],
     [AC_MSG_WARN([Python >= 3.6 is required for optional Makefile targets.])
   ])
 
-  if test x"$ENABLE_CRYPT_KAT_GEN" = "xyes"; then
+  if test x"$ENABLE_KA_TABLE_GEN" = "xyes"; then
     AX_PYTHON_MODULE([passlib], [], [$PYTHON])
     if test x"$HAVE_PYMOD_PASSLIB" = "xno"; then
-      ENABLE_CRYPT_KAT_GEN="no"
+      ENABLE_KA_TABLE_GEN="no"
     fi
   fi
 fi
 
-if test x"$ENABLE_CRYPT_KAT_GEN" = "xno"; then
+if test x"$ENABLE_KA_TABLE_GEN" = "xno"; then
   AC_MSG_WARN(
-    [Disabling the "regen-test-crypt-kat" target, missing Python requirements.])
+    [Disabling the "regen-ka-table" target, missing Python requirements.])
 fi
-AM_CONDITIONAL([ENABLE_CRYPT_KAT_GEN], [test x"$ENABLE_CRYPT_KAT_GEN" = "xyes"])
+AM_CONDITIONAL([ENABLE_KA_TABLE_GEN], [test x"$ENABLE_KA_TABLE_GEN" = "xyes"])
 
 # Configure options.
 AC_ARG_ENABLE([failure-tokens],
@@ -307,7 +301,6 @@ AC_ARG_ENABLE([xcrypt-compat-files],
         *) AC_MSG_ERROR([bad value ${enableval} for --enable-xcrypt-compat-files]);;
      esac],
     [enable_xcrypt_compat_files=1])
-AM_CONDITIONAL([ENABLE_XCRYPT_COMPAT_FILES], [test x"$enable_xcrypt_compat_files" = x1])
 
 AC_ARG_ENABLE([obsolete-api],
     AS_HELP_STRING(
@@ -372,7 +365,7 @@ AC_ARG_ENABLE([hashes],
         [--enable-hashes=HASHES],
         [Select hash methods to support.  Acceptable values are
          'all' or a comma-separated list of names from the file
-         'hashes.lst' and/or the keywords 'strong', 'alt',
+         'hashes.conf' and/or the keywords 'strong', 'alt',
          'fedora', 'freebsd', 'glibc', 'netbsd', 'openbsd',
          'osx', 'owl', 'solaris', and 'suse' which select groups
          of methods as described in that file.
@@ -388,7 +381,7 @@ AC_ARG_ENABLE([hashes],
 hashes_enabled=$(
     $AWK -f ${srcdir}/lib/sel-hashes.awk \
          -v SELECTED_HASHES="$hashes_selected" \
-            ${srcdir}/lib/hashes.lst
+            ${srcdir}/lib/hashes.conf
 )
 if test x"$hashes_enabled" = x || test x"$hashes_enabled" = x,; then
     AC_MSG_ERROR([bad value '${hashes_selected}' for --enable-hashes])
@@ -496,6 +489,10 @@ AC_SUBST([MINVER_OS])
 AC_SUBST([SYMVER_FLOOR])
 AC_SUBST([SYMVER_MIN])
 
+# If we are not building the obsolete APIs then we shouldn't install
+# xcrypt.h or the compatibility symlinks either.
+if test $enable_obsolete_api = 0; then enable_xcrypt_compat_files=0; fi
+
 AC_DEFINE_UNQUOTED([SYMVER_FLOOR], [$SYMVER_FLOOR],
   [Define as the lowest compatibility symbol version that is actually
    included in libcrypt.so.])
@@ -503,8 +500,11 @@ AC_DEFINE_UNQUOTED([SYMVER_FLOOR], [$SYMVER_FLOOR],
 AC_DEFINE_UNQUOTED([ENABLE_OBSOLETE_API], [$enable_obsolete_api],
  [Define as 1 if the obsolete APIs (fcrypt, encrypt, setkey)
   should be included, 0 otherwise.])
+
 AM_CONDITIONAL([ENABLE_OBSOLETE_API], [test $enable_obsolete_api = 1])
 AM_CONDITIONAL([ENABLE_COMPAT_SUSE], [test $enable_compat_suse = 1])
+AM_CONDITIONAL([ENABLE_XCRYPT_COMPAT_FILES],
+               [test $enable_xcrypt_compat_files = 1])
 
 # The Makefile needs to know which versions of the library we are building.
 AM_CONDITIONAL([ENABLE_STATIC], [test $enable_static = yes])

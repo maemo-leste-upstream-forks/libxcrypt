@@ -1,3 +1,10 @@
+libxcrypt (1:4.4.15-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Add a symbols file for nios2. (Closes: #952650)
+
+ -- Marco d'Itri <md@linux.it>  Fri, 28 Feb 2020 20:32:59 +0100
+
 libxcrypt (1:4.4.10-10) unstable; urgency=high
 
   * Re-upload source-only.

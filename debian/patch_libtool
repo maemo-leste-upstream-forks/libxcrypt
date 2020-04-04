@@ -5,7 +5,7 @@ if [ -z "$DEB_HOST_ARCH" ]; then
 fi
 
 case "$DEB_HOST_ARCH" in
-  alpha|ia64) ;;
+  alpha) ;;
   *) exit ;;
 esac
 

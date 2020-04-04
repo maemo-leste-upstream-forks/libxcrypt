@@ -1,3 +1,11 @@
+libxcrypt (1:4.4.16-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Rename back the library to libcrypt.so.1 on ia64. (Closes: #953958)
+  * Add an autopkg test contributed by Matthias Klose. (Closes: #953538)
+
+ -- Marco d'Itri <md@linux.it>  Sun, 05 Apr 2020 01:12:05 +0200
+
 libxcrypt (1:4.4.15-1) unstable; urgency=medium
 
   * New upstream release.

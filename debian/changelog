@@ -1,3 +1,10 @@
+libxcrypt (1:4.4.17-1) unstable; urgency=medium
+
+  * New upstream release.
+    + Allow almost all characters in salts.
+
+ -- Marco d'Itri <md@linux.it>  Tue, 25 Aug 2020 01:51:08 +0200
+
 libxcrypt (1:4.4.16-1) unstable; urgency=medium
 
   * New upstream release.

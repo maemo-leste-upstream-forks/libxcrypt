@@ -13,20 +13,10 @@ BUILD_DEB2 := 1
 BUILD_DEV_VER := 2
 BUILD_TARGETS += build-deb2/.stamp
 endif
-ifneq ($(filter libcrypt1-udeb,$(DOPACKAGES)),)
-BUILD_UDEB := 1
-BUILD_TARGETS += build-udeb/.stamp
-endif
-
-ifeq ($(filter noudeb, $(DEB_BUILD_PROFILES)), noudeb)
-BUILD_UDEB :=
-NO_PACKAGE := --no-package=libcrypt1-udeb
-endif
 
 D   := $(CURDIR)/debian/libcrypt1
 DD  := $(CURDIR)/debian/libcrypt-dev
 D2  := $(CURDIR)/debian/libcrypt2
-DU  := $(CURDIR)/debian/libcrypt1-udeb
 DS  := $(CURDIR)/debian/libxcrypt-source
 
 CONFFLAGS = --disable-werror --prefix=/usr \
@@ -35,10 +25,6 @@ CONFFLAGS_deb  = $(CONFFLAGS) \
   $(shell DEB_BUILD_MAINT_OPTIONS="hardening=+bindnow" \
     dpkg-buildflags --export=configure || true) \
   --libdir=/usr/lib/$(DEB_HOST_MULTIARCH)
-CONFFLAGS_udeb = $(CONFFLAGS) \
-  $(subst -O2,-Os -fomit-frame-pointer,$(shell DEB_BUILD_MAINT_OPTIONS="hardening=-all" \
-    dpkg-buildflags --export=configure || true)) \
-  --libdir=/usr/lib
 
 ##############################################################################
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
@@ -62,10 +48,6 @@ build-deb1/config.status:
 build-deb2/config.status:
 	dh_auto_configure --builddir=build-deb2 -- $(subst api=glibc,api=no,$(CONFFLAGS_deb))
 
-build-udeb/config.status:
-	dh_auto_configure --builddir=build-udeb -- $(CONFFLAGS_udeb)
-	sh debian/patch_libtool build-udeb
-
 override_dh_auto_configure:
 
 build-deb1/.stamp: build-deb1/config.status
@@ -74,10 +56,6 @@ build-deb1/.stamp: build-deb1/config.status
 
 build-deb2/.stamp: build-deb2/config.status
 	dh_auto_build --builddir=build-deb2
-	touch $@
-
-build-udeb/.stamp: build-udeb/config.status
-	dh_auto_build --builddir=build-udeb
 	touch $@
 
 override_dh_auto_build: $(BUILD_TARGETS)
@@ -118,12 +96,6 @@ endif
 	rm $(D2)/usr/lib/*/*.la
 	rmdir --parents --ignore-fail-on-non-empty \
 		$$(find $(D2) -type d -empty) $$(find $(DD) -type d -empty)
-endif
-
-ifdef BUILD_UDEB
-	cd build-udeb/ && \
-	$(MAKE) install-exec DESTDIR=$(DU)
-	rm $(DU)/usr/lib/*.a $(DU)/usr/lib/*.la $(DU)/usr/lib/*.so
 endif
 
 	mkdir -p $(DS)/usr/src/libxcrypt/
